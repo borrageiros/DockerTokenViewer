@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "cors-anywhere": "^0.4.4",
+    "dotenv": "^16.4.5",
     "express": "^4.21.1"
   }
 }
