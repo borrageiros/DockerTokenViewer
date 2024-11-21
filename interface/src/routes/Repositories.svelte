@@ -249,17 +249,6 @@
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays <= 7 && !isToday(dateString) && !isYesterday(dateString);
   }
-
-  function formatTooltipDate(dateString: string): string {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  }
 </script>
 
 <div class="app-container" class:dark={darkMode}>
@@ -283,11 +272,31 @@
           <Table striped hover responsive class={darkMode ? 'table-dark' : ''}>
             <thead>
               <tr>
-                <th style="width: 15%">Name</th>
-                <th style="width: 35%">Description</th>
-                <th style="width: 15%">Downloads</th>
-                <th style="width: 10%">Size</th>
-                <th style="width: 25%">Last update</th>
+                <th style="width: 25%" on:click={() => handleSort('name', true)}>
+                  Name {#if repoSortConfig.column === 'name'}
+                    <span>{repoSortConfig.direction === 'asc' ? '↑' : '↓'}</span>
+                  {/if}
+                </th>
+                <th style="width: 35%" on:click={() => handleSort('description', true)}>
+                  Description {#if repoSortConfig.column === 'description'}
+                    <span>{repoSortConfig.direction === 'asc' ? '↑' : '↓'}</span>
+                  {/if}
+                </th>
+                <th style="width: 5%" on:click={() => handleSort('pull_count', true)}>
+                  Downloads {#if repoSortConfig.column === 'pull_count'}
+                    <span>{repoSortConfig.direction === 'asc' ? '↑' : '↓'}</span>
+                  {/if}
+                </th>
+                <th style="width: 10%" on:click={() => handleSort('storage_size', true)}>
+                  Size {#if repoSortConfig.column === 'storage_size'}
+                    <span>{repoSortConfig.direction === 'asc' ? '↑' : '↓'}</span>
+                  {/if}
+                </th>
+                <th style="width: 25%" on:click={() => handleSort('last_updated', true)}>
+                  Last update {#if repoSortConfig.column === 'last_updated'}
+                    <span>{repoSortConfig.direction === 'asc' ? '↑' : '↓'}</span>
+                  {/if}
+                </th>
               </tr>
             </thead>
           </Table>
@@ -305,9 +314,9 @@
           <tbody>
             {#each repositories.results || [] as repo}
               <tr on:click={() => handleRepositoryClick(repo.name)} style="cursor: pointer;">
-                <td style="width: 15%">{repo.name}</td>
+                <td style="width: 25%">{repo.name}</td>
                 <td style="width: 35%">{repo.description || '-'}</td>
-                <td style="width: 15%">{repo.pull_count.toLocaleString()}</td>
+                <td style="width: 5%">{repo.pull_count.toLocaleString()}</td>
                 <td style="width: 10%">{formatSize(repo.storage_size)}</td>
                 <td style="width: 25%">
                   {formatDate(repo.last_updated)}
@@ -363,10 +372,26 @@
               <Table striped hover responsive class={darkMode ? 'table-dark' : ''}>
                 <thead>
                   <tr>
-                    <th style="width: 25%">Name</th>
-                    <th style="width: 20%">Size</th>
-                    <th style="width: 20%">Pushed by</th>
-                    <th style="width: 25%">Last update</th>
+                    <th style="width: 25%" on:click={() => handleSort('name', false)}>
+                      Name {#if tagSortConfig.column === 'name'}
+                        <span>{tagSortConfig.direction === 'asc' ? '↑' : '↓'}</span>
+                      {/if}
+                    </th>
+                    <th style="width: 20%" on:click={() => handleSort('full_size', false)}>
+                      Size {#if tagSortConfig.column === 'full_size'}
+                        <span>{tagSortConfig.direction === 'asc' ? '↑' : '↓'}</span>
+                      {/if}
+                    </th>
+                    <th style="width: 20%" on:click={() => handleSort('last_updater_username', false)}>
+                      Pushed by {#if tagSortConfig.column === 'last_updater_username'}
+                        <span>{tagSortConfig.direction === 'asc' ? '↑' : '↓'}</span>
+                      {/if}
+                    </th>
+                    <th style="width: 25%" on:click={() => handleSort('last_updated', false)}>
+                      Last update {#if tagSortConfig.column === 'last_updated'}
+                        <span>{tagSortConfig.direction === 'asc' ? '↑' : '↓'}</span>
+                      {/if}
+                    </th>
                     <th style="width: 10%">Copy</th>
                   </tr>
                 </thead>
@@ -562,6 +587,13 @@
     padding: 1rem !important;
     user-select: none;
     position: relative;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+
+  :global(th span) {
+    margin-left: 0.5rem;
+    display: inline-block;
   }
 
   :global(th:hover) {
