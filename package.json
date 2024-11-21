@@ -5,6 +5,7 @@
   "author": "borrageiros",
   "license": "MIT",
   "scripts": {
+    "postinstall": "cd interface && yarn install",
     "prestart": "node -e \"const fs=require('fs');!fs.existsSync('./interface-build')&&require('child_process').execSync('yarn build-interface',{stdio:'inherit'})\"",
     "start": "node proxy.js",
     "build-interface": "cd interface && yarn build",
