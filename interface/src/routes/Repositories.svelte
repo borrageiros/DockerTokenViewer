@@ -2,9 +2,11 @@
   import storage from '../utils/storage';
   import { onMount } from 'svelte';
   import { getRepositories, getRepositoryTags } from '../utils/api';
-  import { Table, Modal, ModalBody, Icon, Badge } from '@sveltestrap/sveltestrap';
+  import { Table, Modal, ModalBody, Icon } from '@sveltestrap/sveltestrap';
   import SearchBar from '../components/SearchBar.svelte';
   import ThemeToggle from '../components/ThemeToggle.svelte';
+  import Badge from '../components/Badge.svelte';
+  import CopyImage from '../components/CopyImage.svelte';
 
   interface Repository {
     name: string;
@@ -230,67 +232,103 @@
       date.getMonth() === today.getMonth() &&
       date.getFullYear() === today.getFullYear();
   }
+
+  function isYesterday(dateString: string): boolean {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const date = new Date(dateString);
+    return date.getDate() === yesterday.getDate() &&
+      date.getMonth() === yesterday.getMonth() &&
+      date.getFullYear() === yesterday.getFullYear();
+  }
+
+  function isThisWeek(dateString: string): boolean {
+    const today = new Date();
+    const date = new Date(dateString);
+    const diffTime = Math.abs(today.getTime() - date.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays <= 7 && !isToday(dateString) && !isYesterday(dateString);
+  }
+
+  function formatTooltipDate(dateString: string): string {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
 </script>
 
 <div class="app-container" class:dark={darkMode}>
   <div class="table-container" class:dark={darkMode}>
-    <br/>
-    <div class="controls-container">
-      <SearchBar
-        bind:value={searchTerm}
-        placeholder="Search repositories..."
-        {darkMode}
-        onRefresh={refreshRepositories}
-      />
-      <ThemeToggle 
-        {darkMode} 
-        on:themeChange={(e) => darkMode = e.detail} 
-      />
+    <div class="sticky-header">
+      <div class="controls-container">
+        <SearchBar
+          bind:value={searchTerm}
+          placeholder="Search repositories..."
+          {darkMode}
+          onRefresh={refreshRepositories}
+        />
+        <ThemeToggle 
+          {darkMode} 
+          on:themeChange={(e) => darkMode = e.detail} 
+        />
+      </div>
+
+      {#if !isLoadingRepositories}
+        <div class="table-header">
+          <Table striped hover responsive class={darkMode ? 'table-dark' : ''}>
+            <thead>
+              <tr>
+                <th style="width: 15%">Name</th>
+                <th style="width: 35%">Description</th>
+                <th style="width: 15%">Downloads</th>
+                <th style="width: 10%">Size</th>
+                <th style="width: 25%">Last update</th>
+              </tr>
+            </thead>
+          </Table>
+        </div>
+      {/if}
     </div>
 
-    {#if isLoadingRepositories}
-      <div class="loader-container">
-        <div class="loader"></div>
-      </div>
-    {:else}
-      <Table striped hover responsive class={darkMode ? 'table-dark' : ''}>
-        <thead>
-          <tr>
-            <th on:click={() => handleSort('name', true)} style="cursor: pointer">
-              Name {repoSortConfig.column === 'name' ? (repoSortConfig.direction === 'asc' ? '↑' : '↓') : ''}
-            </th>
-            <th on:click={() => handleSort('description', true)} style="cursor: pointer">
-              Description {repoSortConfig.column === 'description' ? (repoSortConfig.direction === 'asc' ? '↑' : '↓') : ''}
-            </th>
-            <th on:click={() => handleSort('pull_count', true)} style="cursor: pointer">
-              Downloads {repoSortConfig.column === 'pull_count' ? (repoSortConfig.direction === 'asc' ? '↑' : '↓') : ''}
-            </th>
-            <th on:click={() => handleSort('storage_size', true)} style="cursor: pointer">
-              Size {repoSortConfig.column === 'storage_size' ? (repoSortConfig.direction === 'asc' ? '↑' : '↓') : ''}
-            </th>
-            <th on:click={() => handleSort('last_updated', true)} style="cursor: pointer">
-              Last updated {repoSortConfig.column === 'last_updated' ? (repoSortConfig.direction === 'asc' ? '↑' : '↓') : ''}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {#each repositories.results || [] as repo}
-            <tr on:click={() => handleRepositoryClick(repo.name)} style="cursor: pointer;">
-              <td>{repo.name}</td>
-              <td>{repo.description || '-'}</td>
-              <td>{repo.pull_count.toLocaleString()}</td>
-              <td>{formatSize(repo.storage_size)}</td>
-              <td>
-                {formatDate(repo.last_updated)}
-                {#if isToday(repo.last_updated)}
-                  <span class="badge bg-success rounded-pill">TODAY</span>
-                {/if}
-              </td>
-            </tr>
-          {/each}
-        </tbody>
-      </Table>
-    {/if}
+    <div class="table-body">
+      {#if isLoadingRepositories}
+        <div class="loader-container">
+          <div class="loader"></div>
+        </div>
+      {:else}
+        <Table striped hover responsive class={darkMode ? 'table-dark' : ''}>
+          <tbody>
+            {#each repositories.results || [] as repo}
+              <tr on:click={() => handleRepositoryClick(repo.name)} style="cursor: pointer;">
+                <td style="width: 15%">{repo.name}</td>
+                <td style="width: 35%">{repo.description || '-'}</td>
+                <td style="width: 15%">{repo.pull_count.toLocaleString()}</td>
+                <td style="width: 10%">{formatSize(repo.storage_size)}</td>
+                <td style="width: 25%">
+                  {formatDate(repo.last_updated)}
+                  {#if isToday(repo.last_updated)}
+                    <Badge text="TODAY" color="success" />
+                  {:else if isYesterday(repo.last_updated)}
+                    <Badge text="YESTERDAY" color="warning" />
+                  {:else if isThisWeek(repo.last_updated)}
+                    <Badge 
+                      text="LAST DAYS" 
+                      color="danger" 
+                      tooltipText="Updated in the last 7 days"
+                    />
+                  {/if}
+                </td>
+              </tr>
+            {/each}
+          </tbody>
+        </Table>
+      {/if}
+    </div>
   </div>
 
   <Modal 
@@ -300,57 +338,77 @@
     class={darkMode ? 'modal-dark' : ''}
   >
     <ModalBody>
-      <h2>{selectedRepoName}</h2>
+      <h2 class="selected-repo-name-title">{selectedRepoName}</h2>
       {#if isLoadingTags}
         <div class="loader-container">
           <div class="loader"></div>
         </div>
       {:else}
-        <div class="controls-container">
-          <SearchBar
-            bind:value={tagSearchTerm}
-            placeholder="Search tags..."
-            {darkMode}
-            onRefresh={refreshTags}
-          />
-          <ThemeToggle 
-            {darkMode} 
-            on:themeChange={(e) => darkMode = e.detail} 
-          />
+        <div class="table-container modal-table" class:dark={darkMode}>
+          <div class="sticky-header">
+            <div class="controls-container">
+              <SearchBar
+                bind:value={tagSearchTerm}
+                placeholder="Search tags..."
+                {darkMode}
+                onRefresh={refreshTags}
+              />
+              <ThemeToggle 
+                {darkMode} 
+                on:themeChange={(e) => darkMode = e.detail} 
+              />
+            </div>
+
+            <div class="table-header">
+              <Table striped hover responsive class={darkMode ? 'table-dark' : ''}>
+                <thead>
+                  <tr>
+                    <th style="width: 25%">Name</th>
+                    <th style="width: 20%">Size</th>
+                    <th style="width: 20%">Pushed by</th>
+                    <th style="width: 25%">Last update</th>
+                    <th style="width: 10%">Copy</th>
+                  </tr>
+                </thead>
+              </Table>
+            </div>
+          </div>
+
+          <div class="table-body">
+            <Table striped hover responsive class={darkMode ? 'table-dark' : ''}>
+              <tbody>
+                {#each selectedRepoTags as tag}
+                  <tr>
+                    <td style="width: 25%">{tag.name}</td>
+                    <td style="width: 20%">{formatSize(tag.full_size)}</td>
+                    <td style="width: 20%">{tag.last_updater_username}</td>
+                    <td style="width: 25%">
+                      {formatDate(tag.last_updated)}
+                      {#if isToday(tag.last_updated)}
+                        <Badge text="TODAY" color="success" />
+                      {:else if isYesterday(tag.last_updated)}
+                        <Badge text="YESTERDAY" color="warning" />
+                      {:else if isThisWeek(tag.last_updated)}
+                        <Badge 
+                          text="LAST DAYS" 
+                          color="danger" 
+                          tooltipText="Updated in the last 7 days"
+                        />
+                      {/if}
+                    </td>
+                    <td style="width: 10%">
+                      <CopyImage 
+                        imageName={selectedRepoName} 
+                        tagName={tag.name}
+                        {darkMode}
+                      />
+                    </td>
+                  </tr>
+                {/each}
+              </tbody>
+            </Table>
+          </div>
         </div>
-        <Table striped hover responsive class={darkMode ? 'table-dark' : ''}>
-          <thead>
-            <tr>
-              <th on:click={() => handleSort('name', false)} style="cursor: pointer">
-                Name {tagSortConfig.column === 'name' ? (tagSortConfig.direction === 'asc' ? '↑' : '↓') : ''}
-              </th>
-              <th on:click={() => handleSort('full_size', false)} style="cursor: pointer">
-                Size {tagSortConfig.column === 'full_size' ? (tagSortConfig.direction === 'asc' ? '↑' : '↓') : ''}
-              </th>
-              <th on:click={() => handleSort('last_updater_username', false)} style="cursor: pointer">
-                Pushed by {tagSortConfig.column === 'last_updater_username' ? (tagSortConfig.direction === 'asc' ? '↑' : '↓') : ''}
-              </th>
-              <th on:click={() => handleSort('last_updated', false)} style="cursor: pointer">
-                Last updated {tagSortConfig.column === 'last_updated' ? (tagSortConfig.direction === 'asc' ? '↑' : '↓') : ''}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {#each selectedRepoTags as tag}
-              <tr>
-                <td>{tag.name}</td>
-                <td>{formatSize(tag.full_size)}</td>
-                <td>{tag.last_updater_username}</td>
-                <td>
-                  {formatDate(tag.last_updated)}
-                  {#if isToday(tag.last_updated)}
-                    <span class="badge bg-success rounded-pill">TODAY</span>
-                  {/if}
-                </td>
-              </tr>
-            {/each}
-          </tbody>
-        </Table>
       {/if}
     </ModalBody>
   </Modal>
@@ -366,6 +424,9 @@
 </div>
 
 <style>
+  .selected-repo-name-title {
+    margin-bottom: 1rem;
+  }
   .app-container {
     min-height: 100vh;
     background-color: #ffffff;
@@ -423,26 +484,72 @@
   .table-container {
     max-width: 1200px;
     margin: 2rem auto;
-    padding: 2rem 1rem;
+    padding: 0;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
     border-radius: 8px;
     background-color: white;
     transition: all 0.3s ease;
+    height: calc(100vh - 4rem);
+    display: flex;
+    flex-direction: column;
   }
 
-  .table-container.dark {
-    background-color: #1a1a1a;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+  .sticky-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: inherit;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    padding: 1rem 1rem 0 1rem;
   }
 
-  .table-container {
-    max-width: 1200px;
-    margin: 2rem auto;
+  .table-header {
+    margin-bottom: -1px;
+  }
+
+  .table-header :global(table) {
+    margin: 0;
+  }
+
+  .table-body {
+    flex: 1;
+    overflow-y: auto;
     padding: 0 1rem;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
-    background-color: white;
-    transition: all 0.3s ease;
+    scrollbar-width: none; 
+    -ms-overflow-style: none; 
+  }
+
+  .table-body::-webkit-scrollbar {
+    display: none; 
+  }
+
+  :global(.table-body table),
+  :global(.table-body tbody),
+  :global(.table-body tr),
+  :global(.table-body td) {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  :global(.table-body table::-webkit-scrollbar),
+  :global(.table-body tbody::-webkit-scrollbar),
+  :global(.table-body tr::-webkit-scrollbar),
+  :global(.table-body td::-webkit-scrollbar) {
+    display: none;
+  }
+
+  :global(.table-responsive) {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  :global(.table-responsive::-webkit-scrollbar) {
+    display: none;
+  }
+
+  .dark .sticky-header {
+    background-color: #1a1a1a;
   }
 
   :global(table) {
@@ -637,23 +744,6 @@
     }
   }
 
-  :global(.badge) {
-    margin-left: 0.5rem;
-    vertical-align: middle;
-    font-size: 0.75em;
-    padding: 0.35em 0.65em;
-    font-weight: 700;
-  }
-
-  :global(.bg-success) {
-    background-color: #198754 !important;
-    color: white;
-  }
-
-  :global(.rounded-pill) {
-    border-radius: 50rem !important;
-  }
-
   .controls-container {
     display: flex;
     gap: 0.5rem;
@@ -669,6 +759,45 @@
 
   :global(.controls-container > :last-child) {
     flex: 0 0 auto;
+  }
+
+  :global(.modal-body) {
+    padding: 1rem !important;
+    max-height: 80vh;
+    overflow: hidden;
+  }
+
+  .modal-table {
+    height: calc(70vh - 4rem);
+    margin: 0;
+    box-shadow: none;
+  }
+
+  .modal-table .sticky-header {
+    background-color: inherit;
+    border-radius: 0;
+  }
+
+  .dark .modal-table .sticky-header {
+    background-color: #1a1a1a;
+  }
+
+  .selected-repo-name-title {
+    margin-bottom: 1rem;
+    padding: 0 1rem;
+  }
+
+  :global(.modal-dark .modal-content) {
+    background-color: #1a1a1a !important;
+    color: #ffffff !important;
+    border-radius: 8px !important;
+    border: 1px solid #34495e !important;
+  }
+
+  :global(.modal-dark .modal-body) {
+    background-color: #1a1a1a !important;
+    color: #ffffff !important;
+    border-radius: 8px !important;
   }
 </style>
 

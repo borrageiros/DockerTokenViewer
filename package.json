@@ -7,11 +7,13 @@
   "scripts": {
     "prestart": "node -e \"const fs=require('fs');!fs.existsSync('./interface-build')&&require('child_process').execSync('yarn build-interface',{stdio:'inherit'})\"",
     "start": "node proxy.js",
-    "build-interface": "cd interface && yarn build"
+    "build-interface": "cd interface && yarn build",
+    "dev": "nodemon server/index.js"
   },
   "dependencies": {
     "cors-anywhere": "^0.4.4",
     "dotenv": "^16.4.5",
-    "express": "^4.21.1"
+    "express": "^4.21.1",
+    "nodemon": "^3.1.7"
   }
 }
