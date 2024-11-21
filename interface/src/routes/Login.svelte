@@ -1,7 +1,8 @@
 <script>
-  import { Form, FormGroup, Input, Label, Button, Container, Row, Col } from '@sveltestrap/sveltestrap';
+  import { Form, FormGroup, Input, Label, Button, Container, Row, Col, Icon } from '@sveltestrap/sveltestrap';
   import storage from "../utils/storage";
   import { onMount } from 'svelte';
+  import ThemeToggle from '../components/ThemeToggle.svelte';
 
   let repository = '';
   let token = '';
@@ -21,18 +22,6 @@
     storage.save('DTVRepository', repository);
     window.location.reload();
   };
-
-  function toggleDarkMode() {
-    darkMode = !darkMode;
-    storage.save('DTVTheme', darkMode ? 'dark' : 'light');
-    if (typeof document !== 'undefined') {
-      if (darkMode) {
-        document.body.classList.add('dark');
-      } else {
-        document.body.classList.remove('dark');
-      }
-    }
-  }
 </script>
 
 {#if mounted}
@@ -42,10 +31,11 @@
         <Col sm="12" md={{ size: 6, offset: 3 }}>
           <div class="login-container" class:dark={darkMode}>
             <div class="header-container">
-              <h2 class="text-center mb-4">Docker Token Viewer</h2>
-              <button class="dark-mode-toggle" on:click={toggleDarkMode} class:dark={darkMode}>
-                {darkMode ? '☀️' : '🌙'}
-              </button>
+              <h2 class="text-center mb-4">🐳 Docker Token Viewer</h2>
+              <ThemeToggle 
+                {darkMode} 
+                on:themeChange={(e) => darkMode = e.detail} 
+              />
             </div>
             <Form on:submit={(e) => {
               e.preventDefault();
@@ -114,21 +104,6 @@
     margin-bottom: 2rem;
   }
 
-  .dark-mode-toggle {
-    padding: 0.5rem 1rem;
-    border-radius: 4px;
-    border: 1px solid #ced4da;
-    background-color: white;
-    cursor: pointer;
-    transition: all 0.3s ease;
-  }
-
-  .dark-mode-toggle.dark {
-    background-color: #2c3e50;
-    color: white;
-    border-color: #34495e;
-  }
-
   .login-container {
     background-color: white;
     padding: 2rem;
@@ -155,5 +130,16 @@
 
   .dark :global(.form-label) {
     color: white;
+  }
+
+  .header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+  }
+
+  h2 {
+    margin: 0;
   }
 </style>

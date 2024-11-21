@@ -2,7 +2,9 @@
   import storage from '../utils/storage';
   import { onMount } from 'svelte';
   import { getRepositories, getRepositoryTags } from '../utils/api';
-  import { Table, Modal, ModalBody } from '@sveltestrap/sveltestrap';
+  import { Table, Modal, ModalBody, Icon, Badge } from '@sveltestrap/sveltestrap';
+  import SearchBar from '../components/SearchBar.svelte';
+  import ThemeToggle from '../components/ThemeToggle.svelte';
 
   interface Repository {
     name: string;
@@ -19,6 +21,11 @@
     last_updated: string;
   }
 
+  interface SortConfig {
+    column: string;
+    direction: 'asc' | 'desc';
+  }
+
   let repositories: { results: Repository[] } = { results: [] };
   let searchTerm = '';
   let allRepositories: Repository[] = [];
@@ -28,6 +35,10 @@
   let isLoadingTags = false;
   let isLoadingRepositories = true;
   let darkMode = false;
+  let tagSearchTerm = '';
+  let allTags: Tag[] = [];
+  let repoSortConfig: SortConfig = { column: '', direction: 'asc' };
+  let tagSortConfig: SortConfig = { column: '', direction: 'asc' };
 
   onMount(async () => {
     const savedTheme = storage.get('DTVTheme');
@@ -63,7 +74,8 @@
       isModalOpen = true;
       isLoadingTags = true;
       const tags = await getRepositoryTags(repoName);
-      selectedRepoTags = tags.results;
+      allTags = tags.results;
+      selectedRepoTags = allTags;
     } catch (error) {
       console.error('Error al obtener los tags:', error);
     } finally {
@@ -73,11 +85,13 @@
 
   function toggleModal() {
     isModalOpen = !isModalOpen;
-  }
-
-  function toggleDarkMode() {
-    darkMode = !darkMode;
-    storage.save('DTVTheme', darkMode ? 'dark' : 'light');
+    if (!isModalOpen) {
+      selectedRepoTags = [];
+      selectedRepoName = '';
+      tagSearchTerm = '';
+      allTags = [];
+      tagSortConfig = { column: '', direction: 'asc' };
+    }
   }
 
   const formatSize = (bytes: number) => {
@@ -110,20 +124,128 @@
     storage.remove('DTVRepository');
     window.location.reload();
   }
+
+  $: {
+    if (tagSearchTerm === '') {
+      selectedRepoTags = allTags;
+    } else {
+      const searchLower = tagSearchTerm.toLowerCase();
+      selectedRepoTags = allTags.filter(tag => 
+        tag.name.toLowerCase().includes(searchLower)
+      );
+    }
+  }
+
+  function sortData<T>(data: T[], config: SortConfig, columnTypes: Record<string, string> = {}): T[] {
+    if (!config.column) return data;
+    
+    return [...data].sort((a: any, b: any) => {
+      let aVal = a[config.column];
+      let bVal = b[config.column];
+      
+      if (columnTypes[config.column] === 'number') {
+        aVal = Number(aVal);
+        bVal = Number(bVal);
+      } else if (columnTypes[config.column] === 'date') {
+        aVal = new Date(aVal).getTime();
+        bVal = new Date(bVal).getTime();
+      }
+      
+      if (aVal < bVal) return config.direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return config.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }
+
+  function handleSort(column: string, isRepoTable: boolean) {
+    const config = isRepoTable ? repoSortConfig : tagSortConfig;
+    
+    if (config.column === column) {
+      config.direction = config.direction === 'asc' ? 'desc' : 'asc';
+    } else {
+      config.column = column;
+      config.direction = 'asc';
+    }
+    
+    if (isRepoTable) {
+      repoSortConfig = { ...config };
+    } else {
+      tagSortConfig = { ...config };
+    }
+  }
+
+  $: {
+    if (repositories.results.length) {
+      const columnTypes = {
+        pull_count: 'number',
+        storage_size: 'number',
+        last_updated: 'date'
+      };
+      repositories.results = sortData(repositories.results, repoSortConfig, columnTypes);
+    }
+  }
+
+  $: {
+    if (selectedRepoTags.length) {
+      const columnTypes = {
+        full_size: 'number',
+        last_updated: 'date'
+      };
+      selectedRepoTags = sortData(selectedRepoTags, tagSortConfig, columnTypes);
+    }
+  }
+
+  async function refreshRepositories() {
+    try {
+      isLoadingRepositories = true;
+      const response = await getRepositories();
+      allRepositories = response.results;
+      repositories = { results: allRepositories };
+    } catch (error) {
+      console.error('Error al actualizar los repositorios:', error);
+    } finally {
+      isLoadingRepositories = false;
+    }
+  }
+
+  async function refreshTags() {
+    if (!selectedRepoName) return;
+    
+    try {
+      isLoadingTags = true;
+      const tags = await getRepositoryTags(selectedRepoName);
+      allTags = tags.results;
+      selectedRepoTags = allTags;
+    } catch (error) {
+      console.error('Error al actualizar los tags:', error);
+    } finally {
+      isLoadingTags = false;
+    }
+  }
+
+  function isToday(dateString: string): boolean {
+    const today = new Date();
+    const date = new Date(dateString);
+    return date.getDate() === today.getDate() &&
+      date.getMonth() === today.getMonth() &&
+      date.getFullYear() === today.getFullYear();
+  }
 </script>
 
 <div class="app-container" class:dark={darkMode}>
   <div class="table-container" class:dark={darkMode}>
-    <div class="search-container">
-      <input
-        type="text"
+    <br/>
+    <div class="controls-container">
+      <SearchBar
         bind:value={searchTerm}
         placeholder="Search repositories..."
-        class:dark={darkMode}
+        {darkMode}
+        onRefresh={refreshRepositories}
       />
-      <button class="dark-mode-toggle" on:click={toggleDarkMode} class:dark={darkMode}>
-        {darkMode ? '☀️' : '🌙'}
-      </button>
+      <ThemeToggle 
+        {darkMode} 
+        on:themeChange={(e) => darkMode = e.detail} 
+      />
     </div>
 
     {#if isLoadingRepositories}
@@ -134,11 +256,21 @@
       <Table striped hover responsive class={darkMode ? 'table-dark' : ''}>
         <thead>
           <tr>
-            <th>Name</th>
-            <th>Description</th>
-            <th>Downloads</th>
-            <th>Size</th>
-            <th>Last updated</th>
+            <th on:click={() => handleSort('name', true)} style="cursor: pointer">
+              Name {repoSortConfig.column === 'name' ? (repoSortConfig.direction === 'asc' ? '↑' : '↓') : ''}
+            </th>
+            <th on:click={() => handleSort('description', true)} style="cursor: pointer">
+              Description {repoSortConfig.column === 'description' ? (repoSortConfig.direction === 'asc' ? '↑' : '↓') : ''}
+            </th>
+            <th on:click={() => handleSort('pull_count', true)} style="cursor: pointer">
+              Downloads {repoSortConfig.column === 'pull_count' ? (repoSortConfig.direction === 'asc' ? '↑' : '↓') : ''}
+            </th>
+            <th on:click={() => handleSort('storage_size', true)} style="cursor: pointer">
+              Size {repoSortConfig.column === 'storage_size' ? (repoSortConfig.direction === 'asc' ? '↑' : '↓') : ''}
+            </th>
+            <th on:click={() => handleSort('last_updated', true)} style="cursor: pointer">
+              Last updated {repoSortConfig.column === 'last_updated' ? (repoSortConfig.direction === 'asc' ? '↑' : '↓') : ''}
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -148,7 +280,12 @@
               <td>{repo.description || '-'}</td>
               <td>{repo.pull_count.toLocaleString()}</td>
               <td>{formatSize(repo.storage_size)}</td>
-              <td>{formatDate(repo.last_updated)}</td>
+              <td>
+                {formatDate(repo.last_updated)}
+                {#if isToday(repo.last_updated)}
+                  <span class="badge bg-success rounded-pill">TODAY</span>
+                {/if}
+              </td>
             </tr>
           {/each}
         </tbody>
@@ -169,13 +306,33 @@
           <div class="loader"></div>
         </div>
       {:else}
+        <div class="controls-container">
+          <SearchBar
+            bind:value={tagSearchTerm}
+            placeholder="Search tags..."
+            {darkMode}
+            onRefresh={refreshTags}
+          />
+          <ThemeToggle 
+            {darkMode} 
+            on:themeChange={(e) => darkMode = e.detail} 
+          />
+        </div>
         <Table striped hover responsive class={darkMode ? 'table-dark' : ''}>
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Size</th>
-              <th>Pushed by</th>
-              <th>Last updated</th>
+              <th on:click={() => handleSort('name', false)} style="cursor: pointer">
+                Name {tagSortConfig.column === 'name' ? (tagSortConfig.direction === 'asc' ? '↑' : '↓') : ''}
+              </th>
+              <th on:click={() => handleSort('full_size', false)} style="cursor: pointer">
+                Size {tagSortConfig.column === 'full_size' ? (tagSortConfig.direction === 'asc' ? '↑' : '↓') : ''}
+              </th>
+              <th on:click={() => handleSort('last_updater_username', false)} style="cursor: pointer">
+                Pushed by {tagSortConfig.column === 'last_updater_username' ? (tagSortConfig.direction === 'asc' ? '↑' : '↓') : ''}
+              </th>
+              <th on:click={() => handleSort('last_updated', false)} style="cursor: pointer">
+                Last updated {tagSortConfig.column === 'last_updated' ? (tagSortConfig.direction === 'asc' ? '↑' : '↓') : ''}
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -184,7 +341,12 @@
                 <td>{tag.name}</td>
                 <td>{formatSize(tag.full_size)}</td>
                 <td>{tag.last_updater_username}</td>
-                <td>{formatDate(tag.last_updated)}</td>
+                <td>
+                  {formatDate(tag.last_updated)}
+                  {#if isToday(tag.last_updated)}
+                    <span class="badge bg-success rounded-pill">TODAY</span>
+                  {/if}
+                </td>
               </tr>
             {/each}
           </tbody>
@@ -261,7 +423,7 @@
   .table-container {
     max-width: 1200px;
     margin: 2rem auto;
-    padding: 0 1rem;
+    padding: 2rem 1rem;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
     border-radius: 8px;
     background-color: white;
@@ -271,16 +433,6 @@
   .table-container.dark {
     background-color: #1a1a1a;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
-  }
-
-  input.dark {
-    background-color: #2c3e50 !important;
-    color: white !important;
-    border-color: #34495e !important;
-  }
-
-  input.dark::placeholder {
-    color: #95a5a6 !important;
   }
 
   .table-container {
@@ -301,6 +453,16 @@
   :global(th) {
     background-color: #f8f9fa;
     padding: 1rem !important;
+    user-select: none;
+    position: relative;
+  }
+
+  :global(th:hover) {
+    background-color: #e9ecef;
+  }
+
+  .dark :global(th:hover) {
+    background-color: #34495e;
   }
 
   :global(td) {
@@ -317,21 +479,6 @@
 
   :global(.pagination) {
     margin: 0;
-  }
-
-  .search-container {
-    margin-bottom: 1rem;
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  input {
-    flex: 1;
-    padding: 0.5rem;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    font-size: 0.9rem;
-    margin-top: 1rem;
   }
 
   :global(.modal-body) {
@@ -367,22 +514,6 @@
     100% { transform: rotate(360deg); }
   }
 
-  .dark-mode-toggle {
-    padding: 0.5rem 1rem;
-    border-radius: 4px;
-    border: 1px solid #ced4da;
-    background-color: white;
-    cursor: pointer;
-    margin-top: 1rem;
-    transition: all 0.3s ease;
-  }
-
-  .dark-mode-toggle.dark {
-    background-color: #2c3e50;
-    color: white;
-    border-color: #34495e;
-  }
-
   .table-container.dark {
     background-color: #1a1a1a;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
@@ -407,16 +538,6 @@
 
   .dark :global(.table-hover tbody tr:hover) {
     background-color: #34495e;
-  }
-
-  input.dark {
-    background-color: #2c3e50;
-    color: white;
-    border-color: #34495e;
-  }
-
-  input.dark::placeholder {
-    color: #95a5a6;
   }
 
   .dark :global(.modal-content) {
@@ -514,6 +635,40 @@
       padding: 1rem;
       border-radius: 50%;
     }
+  }
+
+  :global(.badge) {
+    margin-left: 0.5rem;
+    vertical-align: middle;
+    font-size: 0.75em;
+    padding: 0.35em 0.65em;
+    font-weight: 700;
+  }
+
+  :global(.bg-success) {
+    background-color: #198754 !important;
+    color: white;
+  }
+
+  :global(.rounded-pill) {
+    border-radius: 50rem !important;
+  }
+
+  .controls-container {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    width: 100%;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+
+  :global(.controls-container > :first-child) {
+    flex: 1;
+  }
+
+  :global(.controls-container > :last-child) {
+    flex: 0 0 auto;
   }
 </style>
 
