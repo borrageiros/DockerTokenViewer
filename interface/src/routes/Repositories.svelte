@@ -39,7 +39,7 @@
   let darkMode = false;
   let tagSearchTerm = '';
   let allTags: Tag[] = [];
-  let repoSortConfig: SortConfig = { column: '', direction: 'asc' };
+  let repoSortConfig: SortConfig = { column: 'name', direction: 'asc' };
   let tagSortConfig: SortConfig = { column: '', direction: 'asc' };
 
   onMount(async () => {
@@ -49,7 +49,13 @@
     try {
       const response = await getRepositories();
       allRepositories = response.results;
-      repositories = { results: allRepositories };
+      repositories = { 
+        results: sortData(response.results, repoSortConfig, {
+          pull_count: 'number',
+          storage_size: 'number',
+          last_updated: 'date'
+        }) 
+      };
     } catch (error) {
       console.error('Error al cargar los repositorios:', error);
     } finally {
@@ -272,7 +278,7 @@
           <Table striped hover responsive class={darkMode ? 'table-dark' : ''}>
             <thead>
               <tr>
-                <th style="width: 25%" on:click={() => handleSort('name', true)}>
+                <th style="width: 20%" on:click={() => handleSort('name', true)}>
                   Name {#if repoSortConfig.column === 'name'}
                     <span>{repoSortConfig.direction === 'asc' ? '↑' : '↓'}</span>
                   {/if}
@@ -282,7 +288,7 @@
                     <span>{repoSortConfig.direction === 'asc' ? '↑' : '↓'}</span>
                   {/if}
                 </th>
-                <th style="width: 5%" on:click={() => handleSort('pull_count', true)}>
+                <th style="width: 15%" on:click={() => handleSort('pull_count', true)}>
                   Downloads {#if repoSortConfig.column === 'pull_count'}
                     <span>{repoSortConfig.direction === 'asc' ? '↑' : '↓'}</span>
                   {/if}
@@ -292,7 +298,7 @@
                     <span>{repoSortConfig.direction === 'asc' ? '↑' : '↓'}</span>
                   {/if}
                 </th>
-                <th style="width: 25%" on:click={() => handleSort('last_updated', true)}>
+                <th style="width: 20%" on:click={() => handleSort('last_updated', true)}>
                   Last update {#if repoSortConfig.column === 'last_updated'}
                     <span>{repoSortConfig.direction === 'asc' ? '↑' : '↓'}</span>
                   {/if}
@@ -314,11 +320,11 @@
           <tbody>
             {#each repositories.results || [] as repo}
               <tr on:click={() => handleRepositoryClick(repo.name)} style="cursor: pointer;">
-                <td style="width: 25%">{repo.name}</td>
+                <td style="width: 20%">{repo.name}</td>
                 <td style="width: 35%">{repo.description || '-'}</td>
-                <td style="width: 5%">{repo.pull_count.toLocaleString()}</td>
+                <td style="width: 15%">{repo.pull_count.toLocaleString()}</td>
                 <td style="width: 10%">{formatSize(repo.storage_size)}</td>
-                <td style="width: 25%">
+                <td style="width: 20%">
                   {formatDate(repo.last_updated)}
                   {#if isToday(repo.last_updated)}
                     <Badge text="TODAY" color="success" />
