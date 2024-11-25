@@ -1,12 +1,22 @@
 import axios from 'axios';
 import storage from '../utils/storage';
 
-const proxyUrl = window.location.origin + '/api';
-// const proxyUrl = 'http://localhost:3000/api';
+const location = window.location.origin;
+const proxyUrl = location + '/api';
 
-export async function getRepositories(options: { ordering?: string, namespace?: string, search?: string } = {}) {
-	const token = storage.get('DTVAuth');
-	const repository = storage.get('DTVRepository');
+function redirectToLogin(window: Window) {
+	window.location.reload();
+}
+
+export async function getRepositories(options: { ordering?: string, namespace?: string, search?: string } = {}, window: Window) {
+	const token = storage.getCookie('DTVAuth');
+	const repository = storage.getCookie('DTVRepository');
+	
+	if (!token || !repository) {
+		redirectToLogin(window);
+		return;
+	}
+	
 	try {
 		let allResults = [];
 		let currentPage = 1;
@@ -54,9 +64,15 @@ export async function getRepositories(options: { ordering?: string, namespace?: 
 	}
 }
 
-export async function getRepositoryTags(selectedRepo: string, options: { page?: number, page_size?: number, name?: string, ordering?: string } = {}) {
-	const token = storage.get('DTVAuth');
-	const repository = storage.get('DTVRepository');
+export async function getRepositoryTags(selectedRepo: string, options: { page?: number, page_size?: number, name?: string, ordering?: string } = {}, window: Window) {
+	const token = storage.getCookie('DTVAuth');
+	const repository = storage.getCookie('DTVRepository');
+	
+	if (!token || !repository) {
+		redirectToLogin(window);
+		return;
+	}
+	
 	try {
 		let allResults = [];
 		let totalCount = 0;
@@ -103,9 +119,15 @@ export async function getRepositoryTags(selectedRepo: string, options: { page?: 
 	}
 }
 
-export async function getTagDetails(repo: string, tag: string) {
-	const token = storage.get('DTVAuth');
-	const repository = storage.get('DTVRepository');
+export async function getTagDetails(repo: string, tag: string, window: Window) {
+	const token = storage.getCookie('DTVAuth');
+	const repository = storage.getCookie('DTVRepository');
+	
+	if (!token || !repository) {
+		redirectToLogin(window);
+		return;
+	}
+	
 	try {
 		const response = await axios.get(`${proxyUrl}/https://hub.docker.com/v2/repositories/${repository}/${repo}/tags/${tag}`, {
 			headers: {
@@ -119,8 +141,14 @@ export async function getTagDetails(repo: string, tag: string) {
 	}
 }
 
-export async function proxy(url: string) {
-	const token = storage.get('DTVAuth');
+export async function proxy(url: string, window: Window) {
+	const token = storage.getCookie('DTVAuth');
+	
+	if (!token) {
+		redirectToLogin(window);
+		return;
+	}
+	
 	try {
 		const response = await axios.get(`${proxyUrl}/${url}`, {
 			headers: {

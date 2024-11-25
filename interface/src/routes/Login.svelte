@@ -1,78 +1,78 @@
-<script>
+<script lang="ts">
   import { Form, FormGroup, Input, Label, Button, Container, Row, Col, Icon } from '@sveltestrap/sveltestrap';
   import storage from "../utils/storage";
-  import { onMount } from 'svelte';
   import ThemeToggle from '../components/ThemeToggle.svelte';
 
   let repository = '';
   let token = '';
-  let darkMode = false;
-  let mounted = false;
-
-  onMount(() => {
-    darkMode = storage.get('DTVTheme') === 'dark';
-    mounted = true;
-    if (darkMode) {
-      document.body.classList.add('dark');
-    }
-  });
+  export let darkMode: boolean;
+  let rememberSession = true;
 
   const handleSubmit = () => {
-    storage.save('DTVAuth', token);
-    storage.save('DTVRepository', repository);
+    storage.saveCookie('DTVAuth', token, rememberSession);
+    storage.saveCookie('DTVRepository', repository, rememberSession);
     window.location.reload();
   };
 </script>
 
-{#if mounted}
-  <div class="app-container" class:dark={darkMode}>
-    <Container class="mt-5">
-      <Row>
-        <Col sm="12" md={{ size: 6, offset: 3 }}>
-          <div class="login-container" class:dark={darkMode}>
-            <div class="header-container">
-              <h2 class="text-center mb-4">🐳 Docker Token Viewer</h2>
-              <ThemeToggle 
-                {darkMode} 
-                on:themeChange={(e) => darkMode = e.detail} 
-              />
-            </div>
-            <Form on:submit={(e) => {
-              e.preventDefault();
-              handleSubmit();
-            }}>
-              <FormGroup>
-                <Label for="repository">Repository</Label>
-                <Input
-                  type="text"
-                  id="repository"
-                  placeholder="Enter the repository name"
-                  bind:value={repository}
-                  required
-                />
-              </FormGroup>
-
-              <FormGroup>
-                <Label for="token">Token</Label>
-                <Input
-                  type="password"
-                  id="token"
-                  placeholder="Enter your token"
-                  bind:value={token}
-                  required
-                />
-              </FormGroup>
-
-              <Button color="primary" type="submit" block>
-                Login
-              </Button>
-            </Form>
+<div class="app-container" class:dark={darkMode}>
+  <Container class="mt-5">
+    <Row>
+      <Col sm="12" md={{ size: 6, offset: 3 }}>
+        <div class="login-container" class:dark={darkMode}>
+          <div class="header-container">
+            <h2 class="text-center mb-4">🐳 Docker Token Viewer</h2>
+            <ThemeToggle 
+              {darkMode} 
+              on:themeChange={(e) => darkMode = e.detail} 
+            />
           </div>
-        </Col>
-      </Row>
-    </Container>
-  </div>
-{/if}
+          <Form on:submit={(e) => {
+            e.preventDefault();
+            handleSubmit();
+          }}>
+            <FormGroup>
+              <Label for="repository">Repository</Label>
+              <Input
+                type="text"
+                id="repository"
+                placeholder="Enter the repository name"
+                bind:value={repository}
+                required
+              />
+            </FormGroup>
+
+            <FormGroup>
+              <Label for="token">Token</Label>
+              <Input
+                type="password"
+                id="token"
+                placeholder="Enter your token"
+                bind:value={token}
+                required
+              />
+            </FormGroup>
+
+            <FormGroup class="d-flex align-items-center gap-2">
+              <Input
+                type="checkbox"
+                id="rememberSession"
+                bind:checked={rememberSession}
+              />
+              <Label for="rememberSession" check>
+                Keep session alive
+              </Label>
+            </FormGroup>
+
+            <Button color="primary" type="submit" block class="mt-3">
+              Login
+            </Button>
+          </Form>
+        </div>
+      </Col>
+    </Row>
+  </Container>
+</div>
 
 <style>
   :global(body) {

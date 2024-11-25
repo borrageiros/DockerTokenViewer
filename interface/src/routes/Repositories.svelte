@@ -28,6 +28,7 @@
     direction: 'asc' | 'desc';
   }
 
+  export let darkMode: boolean;
   let repositories: { results: Repository[] } = { results: [] };
   let searchTerm = '';
   let allRepositories: Repository[] = [];
@@ -36,21 +37,20 @@
   let selectedRepoName = '';
   let isLoadingTags = false;
   let isLoadingRepositories = true;
-  let darkMode = false;
   let tagSearchTerm = '';
   let allTags: Tag[] = [];
   let repoSortConfig: SortConfig = { column: 'name', direction: 'asc' };
   let tagSortConfig: SortConfig = { column: '', direction: 'asc' };
 
   onMount(async () => {
-    const savedTheme = storage.get('DTVTheme');
+    const savedTheme = storage.getLocal('DTVTheme');
     darkMode = savedTheme === 'dark';
 
     try {
-      const response = await getRepositories();
-      allRepositories = response.results;
+      const response = await getRepositories({}, window);
+      allRepositories = response?.results || [];
       repositories = { 
-        results: sortData(response.results, repoSortConfig, {
+        results: sortData(response?.results || [], repoSortConfig, {
           pull_count: 'number',
           storage_size: 'number',
           last_updated: 'date'
@@ -81,8 +81,8 @@
       selectedRepoName = repoName;
       isModalOpen = true;
       isLoadingTags = true;
-      const tags = await getRepositoryTags(repoName);
-      allTags = tags.results;
+      const tags = await getRepositoryTags(repoName, {}, window);
+      allTags = tags?.results || [];
       selectedRepoTags = allTags;
     } catch (error) {
       console.error('Error al obtener los tags:', error);
@@ -206,8 +206,8 @@
   async function refreshRepositories() {
     try {
       isLoadingRepositories = true;
-      const response = await getRepositories();
-      allRepositories = response.results;
+      const response = await getRepositories({}, window);
+      allRepositories = response?.results || [];
       repositories = { results: allRepositories };
     } catch (error) {
       console.error('Error al actualizar los repositorios:', error);
@@ -221,8 +221,8 @@
     
     try {
       isLoadingTags = true;
-      const tags = await getRepositoryTags(selectedRepoName);
-      allTags = tags.results;
+      const tags = await getRepositoryTags(selectedRepoName, {}, window);
+      allTags = tags?.results || [];
       selectedRepoTags = allTags;
     } catch (error) {
       console.error('Error al actualizar los tags:', error);

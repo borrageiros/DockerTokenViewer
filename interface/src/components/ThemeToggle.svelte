@@ -2,14 +2,14 @@
   import { createEventDispatcher } from 'svelte';
   import { Icon } from '@sveltestrap/sveltestrap';
   import storage from '../utils/storage';
-  
+
   export let darkMode = false;
 
   const dispatch = createEventDispatcher();
   
   function toggleDarkMode() {
     darkMode = !darkMode;
-    storage.save('DTVTheme', darkMode ? 'dark' : 'light');
+    storage.saveLocal('DTVTheme', darkMode ? 'dark' : 'light');
     dispatch('themeChange', darkMode);
     if (typeof document !== 'undefined') {
       if (darkMode) {

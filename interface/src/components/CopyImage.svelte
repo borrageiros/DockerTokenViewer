@@ -22,7 +22,7 @@
 </script>
 
 <Dropdown bind:isOpen={dropdownOpen} direction="left" theme={darkMode ? 'dark' : 'light'}>
-  <DropdownToggle caret color={darkMode ? 'dark' : 'light'}>
+  <DropdownToggle caret color={darkMode ? 'dark' : 'light'} class={darkMode ? 'dark-border' : 'light-border'}>
     <Icon name="copy" />
   </DropdownToggle>
   <DropdownMenu>
@@ -36,6 +36,14 @@
 </Dropdown>
 
 <style>
+  :global(.dropdown-toggle.dark-border) {
+    border: 1px solid white;
+  }
+
+  :global(.dropdown-toggle.light-border) {
+    border: 1px solid black;
+  }
+
   :global(.dropdown-toggle) {
     padding: 0.25rem 0.5rem;
     font-size: 0.875rem;
