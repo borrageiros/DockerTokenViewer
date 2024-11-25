@@ -58,8 +58,9 @@
                 type="checkbox"
                 id="rememberSession"
                 bind:checked={rememberSession}
+                class="mt-1"
               />
-              <Label for="rememberSession" check>
+              <Label for="rememberSession" class="mb-0" check>
                 Keep session alive
               </Label>
             </FormGroup>
