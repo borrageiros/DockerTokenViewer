@@ -41,6 +41,8 @@
   let allTags: Tag[] = [];
   let repoSortConfig: SortConfig = { column: 'name', direction: 'asc' };
   let tagSortConfig: SortConfig = { column: '', direction: 'asc' };
+  let searchBarRef: HTMLInputElement;
+  let modalSearchBarRef: HTMLInputElement;
 
   onMount(async () => {
     const savedTheme = storage.getLocal('DTVTheme');
@@ -255,6 +257,33 @@
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays <= 7 && !isToday(dateString) && !isYesterday(dateString);
   }
+
+  function handleKeyPress(event: KeyboardEvent) {
+    if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+      return;
+    }
+    
+    if (isModalOpen) {
+      if (document.activeElement !== modalSearchBarRef) {
+        tagSearchTerm = '';
+      }
+      modalSearchBarRef?.focus();
+      tagSearchTerm += event.key;
+    } else {
+      if (document.activeElement !== searchBarRef) {
+        searchTerm = '';
+      }
+      searchBarRef?.focus();
+      searchTerm += event.key;
+    }
+  }
+
+  onMount(() => {
+    window.addEventListener('keypress', handleKeyPress);
+    return () => {
+      window.removeEventListener('keypress', handleKeyPress);
+    };
+  });
 </script>
 
 <div class="app-container" class:dark={darkMode}>
@@ -263,6 +292,7 @@
       <div class="controls-container">
         <SearchBar
           bind:value={searchTerm}
+          bind:inputRef={searchBarRef}
           placeholder="Search repositories..."
           {darkMode}
           onRefresh={refreshRepositories}
@@ -298,7 +328,7 @@
                     <span>{repoSortConfig.direction === 'asc' ? '↑' : '↓'}</span>
                   {/if}
                 </th>
-                <th style="width: 20%" on:click={() => handleSort('last_updated', true)}>
+                <th style="width: 20%; white-space: nowrap;" on:click={() => handleSort('last_updated', true)}>
                   Last update {#if repoSortConfig.column === 'last_updated'}
                     <span>{repoSortConfig.direction === 'asc' ? '↑' : '↓'}</span>
                   {/if}
@@ -324,7 +354,7 @@
                 <td style="width: 35%">{repo.description || '-'}</td>
                 <td style="width: 15%">{repo.pull_count.toLocaleString()}</td>
                 <td style="width: 10%">{formatSize(repo.storage_size)}</td>
-                <td style="width: 20%">
+                <td style="width: 20%; white-space: nowrap;">
                   {formatDate(repo.last_updated)}
                   {#if isToday(repo.last_updated)}
                     <Badge text="TODAY" color="success" />
@@ -364,6 +394,7 @@
             <div class="controls-container">
               <SearchBar
                 bind:value={tagSearchTerm}
+                bind:inputRef={modalSearchBarRef}
                 placeholder="Search tags..."
                 {darkMode}
                 onRefresh={refreshTags}
@@ -393,7 +424,7 @@
                         <span>{tagSortConfig.direction === 'asc' ? '↑' : '↓'}</span>
                       {/if}
                     </th>
-                    <th style="width: 25%" on:click={() => handleSort('last_updated', false)}>
+                    <th style="width: 25%; white-space: nowrap;" on:click={() => handleSort('last_updated', false)}>
                       Last update {#if tagSortConfig.column === 'last_updated'}
                         <span>{tagSortConfig.direction === 'asc' ? '↑' : '↓'}</span>
                       {/if}
@@ -413,7 +444,7 @@
                     <td style="width: 25%">{tag.name}</td>
                     <td style="width: 20%">{formatSize(tag.full_size)}</td>
                     <td style="width: 20%">{tag.last_updater_username}</td>
-                    <td style="width: 25%">
+                    <td style="width: 25%; white-space: nowrap;">
                       {formatDate(tag.last_updated)}
                       {#if isToday(tag.last_updated)}
                         <Badge text="TODAY" color="success" />

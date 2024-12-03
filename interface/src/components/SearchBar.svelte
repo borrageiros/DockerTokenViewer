@@ -5,12 +5,14 @@
   export let placeholder = 'Search...';
   export let darkMode = false;
   export let onRefresh: () => void;
+  export let inputRef: HTMLInputElement | null = null;
 </script>
 
 <div class="search-container">
   <input
     type="text"
     bind:value
+    bind:this={inputRef}
     {placeholder}
     class:dark={darkMode}
   />
