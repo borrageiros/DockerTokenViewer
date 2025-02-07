@@ -1,6 +1,6 @@
 <script lang="ts">
   export let text: string;
-  export let color: 'danger' | 'warning' | 'success' = 'success';
+  export let color: 'danger' | 'warning' | 'success' | 'info' = 'success';
   export let tooltipText: string | undefined = undefined;
 
   const getColorClass = (color: string) => {
@@ -11,6 +11,8 @@
         return 'bg-warning';
       case 'success':
         return 'bg-success';
+      case 'info':
+        return 'bg-info';
       default:
         return 'bg-success';
     }
@@ -53,6 +55,11 @@
 
   .bg-danger {
     background-color: #dc3545;
+  }
+
+  .bg-info {
+    background-color: #17a2b8;
+    color: white;
   }
 
   .rounded-pill {

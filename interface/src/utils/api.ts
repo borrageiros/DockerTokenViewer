@@ -59,7 +59,7 @@ export async function getRepositories(options: { ordering?: string, namespace?: 
 			results: allResults
 		};
 	} catch (error) {
-		console.error('Error fetching Docker repositories:', error);
+		console.error('Error:', error);
 		throw error;
 	}
 }
@@ -114,7 +114,7 @@ export async function getRepositoryTags(selectedRepo: string, options: { page?: 
 			results: allResults
 		};
 	} catch (error) {
-		console.error('Error fetching repository tags:', error);
+		console.error('Error:', error);
 		throw error;
 	}
 }
@@ -136,7 +136,7 @@ export async function getTagDetails(repo: string, tag: string, window: Window) {
 		});
 		return response.data;
 	} catch (error) {
-		console.error('Error fetching tag details:', error);
+		console.error('Error:', error);
 		throw error;
 	}
 }
@@ -157,7 +157,7 @@ export async function proxy(url: string, window: Window) {
 		});
 		return response.data;
 	} catch (error) {
-		console.error('Error fetching tag details:', error);
+		console.error('Error:', error);
 		throw error;
 	}
 }

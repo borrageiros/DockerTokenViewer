@@ -5,6 +5,7 @@
   import { Table, Modal, ModalBody, Icon } from '@sveltestrap/sveltestrap';
   import SearchBar from '../components/SearchBar.svelte';
   import ThemeToggle from '../components/ThemeToggle.svelte';
+  import ColumnSelector from '../components/ColumnSelector.svelte';
   import Badge from '../components/Badge.svelte';
   import CopyImage from '../components/CopyImage.svelte';
 
@@ -28,6 +29,13 @@
     direction: 'asc' | 'desc';
   }
 
+  interface TableColumn {
+    name: string;
+    visible: boolean;
+    width: string;
+    sortKey: string;
+  }
+
   export let darkMode: boolean;
   let repositories: { results: Repository[] } = { results: [] };
   let searchTerm = '';
@@ -43,6 +51,21 @@
   let tagSortConfig: SortConfig = { column: '', direction: 'asc' };
   let searchBarRef: HTMLInputElement;
   let modalSearchBarRef: HTMLInputElement;
+  let repoTableColumns: TableColumn[] = [
+    { name: 'Name', visible: true, width: '20%', sortKey: 'name' },
+    { name: 'Description', visible: true, width: '35%', sortKey: 'description' },
+    { name: 'Downloads', visible: true, width: '15%', sortKey: 'pull_count' },
+    { name: 'Size', visible: true, width: '10%', sortKey: 'storage_size' },
+    { name: 'Last update', visible: true, width: '20%', sortKey: 'last_updated' }
+  ];
+
+  let tagTableColumns: TableColumn[] = [
+    { name: 'Name', visible: true, width: '25%', sortKey: 'name' },
+    { name: 'Size', visible: true, width: '20%', sortKey: 'full_size' },
+    { name: 'Pushed by', visible: true, width: '20%', sortKey: 'last_updater_username' },
+    { name: 'Last update', visible: true, width: '25%', sortKey: 'last_updated' },
+    { name: 'Copy', visible: true, width: '10%', sortKey: '' }
+  ];
 
   onMount(async () => {
     const savedTheme = storage.getLocal('DTVTheme');
@@ -59,7 +82,7 @@
         }) 
       };
     } catch (error) {
-      console.error('Error al cargar los repositorios:', error);
+      console.error('Error:', error);
     } finally {
       isLoadingRepositories = false;
     }
@@ -87,7 +110,7 @@
       allTags = tags?.results || [];
       selectedRepoTags = allTags;
     } catch (error) {
-      console.error('Error al obtener los tags:', error);
+      console.error('Error:', error);
     } finally {
       isLoadingTags = false;
     }
@@ -212,7 +235,7 @@
       allRepositories = response?.results || [];
       repositories = { results: allRepositories };
     } catch (error) {
-      console.error('Error al actualizar los repositorios:', error);
+      console.error('Error:', error);
     } finally {
       isLoadingRepositories = false;
     }
@@ -227,7 +250,7 @@
       allTags = tags?.results || [];
       selectedRepoTags = allTags;
     } catch (error) {
-      console.error('Error al actualizar los tags:', error);
+      console.error('Error:', error);
     } finally {
       isLoadingTags = false;
     }
@@ -278,12 +301,36 @@
     }
   }
 
+  function handleColumnToggle(event: CustomEvent<{column: string}>) {
+    repoTableColumns = repoTableColumns.map(col => {
+      if (col.name === event.detail.column) {
+        return { ...col, visible: !col.visible };
+      }
+      return col;
+    });
+  }
+
+  function handleTagColumnToggle(event: CustomEvent<{column: string}>) {
+    tagTableColumns = tagTableColumns.map(col => {
+      if (col.name === event.detail.column) {
+        return { ...col, visible: !col.visible };
+      }
+      return col;
+    });
+  }
+
   onMount(() => {
     window.addEventListener('keypress', handleKeyPress);
     return () => {
       window.removeEventListener('keypress', handleKeyPress);
     };
   });
+
+  function isLatestTag(tag: Tag, allTags: Tag[]): boolean {
+    if (allTags.length === 0) return false;
+    const latestDate = Math.max(...allTags.map(t => new Date(t.last_updated).getTime()));
+    return new Date(tag.last_updated).getTime() === latestDate;
+  }
 </script>
 
 <div class="app-container" class:dark={darkMode}>
@@ -301,6 +348,11 @@
           {darkMode} 
           on:themeChange={(e) => darkMode = e.detail} 
         />
+        <ColumnSelector 
+          {darkMode}
+          columns={repoTableColumns}
+          on:select={handleColumnToggle}
+        />
       </div>
 
       {#if !isLoadingRepositories}
@@ -308,31 +360,16 @@
           <Table striped hover responsive class={darkMode ? 'table-dark' : ''}>
             <thead>
               <tr>
-                <th style="width: 20%" on:click={() => handleSort('name', true)}>
-                  Name {#if repoSortConfig.column === 'name'}
-                    <span>{repoSortConfig.direction === 'asc' ? '↑' : '↓'}</span>
-                  {/if}
-                </th>
-                <th style="width: 35%" on:click={() => handleSort('description', true)}>
-                  Description {#if repoSortConfig.column === 'description'}
-                    <span>{repoSortConfig.direction === 'asc' ? '↑' : '↓'}</span>
-                  {/if}
-                </th>
-                <th style="width: 15%" on:click={() => handleSort('pull_count', true)}>
-                  Downloads {#if repoSortConfig.column === 'pull_count'}
-                    <span>{repoSortConfig.direction === 'asc' ? '↑' : '↓'}</span>
-                  {/if}
-                </th>
-                <th style="width: 10%" on:click={() => handleSort('storage_size', true)}>
-                  Size {#if repoSortConfig.column === 'storage_size'}
-                    <span>{repoSortConfig.direction === 'asc' ? '↑' : '↓'}</span>
-                  {/if}
-                </th>
-                <th style="width: 20%; white-space: nowrap;" on:click={() => handleSort('last_updated', true)}>
-                  Last update {#if repoSortConfig.column === 'last_updated'}
-                    <span>{repoSortConfig.direction === 'asc' ? '↑' : '↓'}</span>
-                  {/if}
-                </th>
+                {#each repoTableColumns.filter(col => col.visible) as column}
+                  <th 
+                    style="width: {column.width}{column.name === 'Last update' ? '; white-space: nowrap' : ''}" 
+                    on:click={() => handleSort(column.sortKey, true)}
+                  >
+                    {column.name} {#if repoSortConfig.column === column.sortKey}
+                      <span>{repoSortConfig.direction === 'asc' ? '↑' : '↓'}</span>
+                    {/if}
+                  </th>
+                {/each}
               </tr>
             </thead>
           </Table>
@@ -350,24 +387,32 @@
           <tbody>
             {#each repositories.results || [] as repo}
               <tr on:click={() => handleRepositoryClick(repo.name)} style="cursor: pointer;">
-                <td style="width: 20%">{repo.name}</td>
-                <td style="width: 35%">{repo.description || '-'}</td>
-                <td style="width: 15%">{repo.pull_count.toLocaleString()}</td>
-                <td style="width: 10%">{formatSize(repo.storage_size)}</td>
-                <td style="width: 20%; white-space: nowrap;">
-                  {formatDate(repo.last_updated)}
-                  {#if isToday(repo.last_updated)}
-                    <Badge text="TODAY" color="success" />
-                  {:else if isYesterday(repo.last_updated)}
-                    <Badge text="YESTERDAY" color="warning" />
-                  {:else if isThisWeek(repo.last_updated)}
-                    <Badge 
-                      text="LAST DAYS" 
-                      color="danger" 
-                      tooltipText="Updated in the last 7 days"
-                    />
-                  {/if}
-                </td>
+                {#each repoTableColumns.filter(col => col.visible) as column}
+                  <td style="width: {column.width}{column.name === 'Last update' ? '; white-space: nowrap' : ''}">
+                    {#if column.name === 'Name'}
+                      {repo.name}
+                    {:else if column.name === 'Description'}
+                      {repo.description || '-'}
+                    {:else if column.name === 'Downloads'}
+                      {repo.pull_count.toLocaleString()}
+                    {:else if column.name === 'Size'}
+                      {formatSize(repo.storage_size)}
+                    {:else if column.name === 'Last update'}
+                      {formatDate(repo.last_updated)}
+                      {#if isToday(repo.last_updated)}
+                        <Badge text="TODAY" color="success" />
+                      {:else if isYesterday(repo.last_updated)}
+                        <Badge text="YESTERDAY" color="warning" />
+                      {:else if isThisWeek(repo.last_updated)}
+                        <Badge 
+                          text="LAST DAYS" 
+                          color="danger" 
+                          tooltipText="Updated in the last 7 days"
+                        />
+                      {/if}
+                    {/if}
+                  </td>
+                {/each}
               </tr>
             {/each}
           </tbody>
@@ -403,33 +448,28 @@
                 {darkMode} 
                 on:themeChange={(e) => darkMode = e.detail} 
               />
+              <ColumnSelector 
+                {darkMode}
+                columns={tagTableColumns}
+                on:select={handleTagColumnToggle}
+              />
             </div>
 
             <div class="table-header">
               <Table striped hover responsive class={darkMode ? 'table-dark' : ''}>
                 <thead>
                   <tr>
-                    <th style="width: 25%" on:click={() => handleSort('name', false)}>
-                      Name {#if tagSortConfig.column === 'name'}
-                        <span>{tagSortConfig.direction === 'asc' ? '↑' : '↓'}</span>
-                      {/if}
-                    </th>
-                    <th style="width: 20%" on:click={() => handleSort('full_size', false)}>
-                      Size {#if tagSortConfig.column === 'full_size'}
-                        <span>{tagSortConfig.direction === 'asc' ? '↑' : '↓'}</span>
-                      {/if}
-                    </th>
-                    <th style="width: 20%" on:click={() => handleSort('last_updater_username', false)}>
-                      Pushed by {#if tagSortConfig.column === 'last_updater_username'}
-                        <span>{tagSortConfig.direction === 'asc' ? '↑' : '↓'}</span>
-                      {/if}
-                    </th>
-                    <th style="width: 25%; white-space: nowrap;" on:click={() => handleSort('last_updated', false)}>
-                      Last update {#if tagSortConfig.column === 'last_updated'}
-                        <span>{tagSortConfig.direction === 'asc' ? '↑' : '↓'}</span>
-                      {/if}
-                    </th>
-                    <th style="width: 10%">Copy</th>
+                    {#each tagTableColumns.filter(col => col.visible) as column}
+                      <th 
+                        style="width: {column.width}{column.name === 'Last update' ? '; white-space: nowrap' : ''}" 
+                        on:click={() => column.sortKey && handleSort(column.sortKey, false)}
+                        class={column.sortKey ? 'sortable' : ''}
+                      >
+                        {column.name} {#if column.sortKey && tagSortConfig.column === column.sortKey}
+                          <span>{tagSortConfig.direction === 'asc' ? '↑' : '↓'}</span>
+                        {/if}
+                      </th>
+                    {/each}
                   </tr>
                 </thead>
               </Table>
@@ -437,38 +477,49 @@
           </div>
 
           <div class="table-body">
-            <Table striped hover responsive class={darkMode ? 'table-dark' : ''}>
-              <tbody>
-                {#each selectedRepoTags as tag}
-                  <tr>
-                    <td style="width: 25%">{tag.name}</td>
-                    <td style="width: 20%">{formatSize(tag.full_size)}</td>
-                    <td style="width: 20%">{tag.last_updater_username}</td>
-                    <td style="width: 25%; white-space: nowrap;">
-                      {formatDate(tag.last_updated)}
-                      {#if isToday(tag.last_updated)}
-                        <Badge text="TODAY" color="success" />
-                      {:else if isYesterday(tag.last_updated)}
-                        <Badge text="YESTERDAY" color="warning" />
-                      {:else if isThisWeek(tag.last_updated)}
-                        <Badge 
-                          text="LAST DAYS" 
-                          color="danger" 
-                          tooltipText="Updated in the last 7 days"
-                        />
-                      {/if}
-                    </td>
-                    <td style="width: 10%">
-                      <CopyImage 
-                        imageName={selectedRepoName} 
-                        tagName={tag.name}
-                        {darkMode}
-                      />
-                    </td>
-                  </tr>
-                {/each}
-              </tbody>
-            </Table>
+            {#key tagTableColumns}
+              <Table striped hover responsive class={darkMode ? 'table-dark' : ''}>
+                <tbody>
+                  {#each selectedRepoTags as tag}
+                    <tr class={isLatestTag(tag, selectedRepoTags) ? 'latest-tag' : ''}>
+                      {#each tagTableColumns.filter(col => col.visible) as column}
+                        <td style="width: {column.width}{column.name === 'Last update' ? '; white-space: nowrap' : ''}">
+                          {#if column.name === 'Name'}
+                            {tag.name}
+                            {#if isLatestTag(tag, selectedRepoTags)}
+                              <Badge text="LATEST" color="info" />
+                            {/if}
+                          {:else if column.name === 'Size'}
+                            {formatSize(tag.full_size)}
+                          {:else if column.name === 'Pushed by'}
+                            {tag.last_updater_username}
+                          {:else if column.name === 'Last update'}
+                            {formatDate(tag.last_updated)}
+                            {#if isToday(tag.last_updated)}
+                              <Badge text="TODAY" color="success" />
+                            {:else if isYesterday(tag.last_updated)}
+                              <Badge text="YESTERDAY" color="warning" />
+                            {:else if isThisWeek(tag.last_updated)}
+                              <Badge 
+                                text="LAST DAYS" 
+                                color="danger" 
+                                tooltipText="Updated in the last 7 days"
+                              />
+                            {/if}
+                          {:else if column.name === 'Copy'}
+                            <CopyImage 
+                              imageName={selectedRepoName} 
+                              tagName={tag.name}
+                              {darkMode}
+                            />
+                          {/if}
+                        </td>
+                      {/each}
+                    </tr>
+                  {/each}
+                </tbody>
+              </Table>
+            {/key}
           </div>
         </div>
       {/if}
@@ -867,6 +918,30 @@
     background-color: #1a1a1a !important;
     color: #ffffff !important;
     border-radius: 8px !important;
+  }
+
+  :global(th.sortable) {
+    cursor: pointer;
+  }
+
+  :global(th:not(.sortable)) {
+    cursor: default;
+  }
+
+  :global(tr.latest-tag) {
+    background-color: rgba(23, 162, 184, 0.1) !important;
+  }
+
+  :global(.table-dark tr.latest-tag) {
+    background-color: rgba(23, 162, 184, 0.2) !important;
+  }
+
+  :global(tr.latest-tag:hover) {
+    background-color: rgba(23, 162, 184, 0.2) !important;
+  }
+
+  :global(.table-dark tr.latest-tag:hover) {
+    background-color: rgba(23, 162, 184, 0.3) !important;
   }
 </style>
 

@@ -9,11 +9,15 @@
 
   function copyToClipboard(text: string) {
     navigator.clipboard.writeText(text)
-      .catch(err => console.error('Error al copiar:', err));
+      .catch(err => console.error('Error:', err));
   }
 
   function copyImageTag() {
     copyToClipboard(`${imageName}:${tagName}`);
+  }
+
+  function copyTag() {
+    copyToClipboard(tagName);
   }
 
   function copyPullCommand() {
@@ -26,6 +30,9 @@
     <Icon name="copy" />
   </DropdownToggle>
   <DropdownMenu>
+    <DropdownItem on:click={copyTag}>
+      Copy tag
+    </DropdownItem>
     <DropdownItem on:click={copyImageTag}>
       Copy image name + tag
     </DropdownItem>
