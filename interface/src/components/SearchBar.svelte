@@ -1,11 +1,23 @@
 <script lang="ts">
   import { Icon } from '@sveltestrap/sveltestrap';
+  import { createEventDispatcher } from 'svelte';
+  
+  const dispatch = createEventDispatcher();
   
   export let value = '';
   export let placeholder = 'Search...';
   export let darkMode = false;
   export let onRefresh: () => void;
   export let inputRef: HTMLInputElement | null = null;
+  export let onInput: ((event: Event) => void) | null = null;
+  
+  function handleInput(event: Event) {
+    if (onInput) {
+      onInput(event);
+    } else {
+      dispatch('input', event);
+    }
+  }
 </script>
 
 <div class="search-container">
@@ -15,6 +27,7 @@
     bind:this={inputRef}
     {placeholder}
     class:dark={darkMode}
+    on:input={handleInput}
   />
   <button class="refresh-button" on:click={onRefresh} class:dark={darkMode}>
     <Icon name="arrow-repeat" />

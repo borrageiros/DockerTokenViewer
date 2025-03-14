@@ -74,44 +74,24 @@ export async function getRepositoryTags(selectedRepo: string, options: { page?: 
 	}
 	
 	try {
-		let allResults = [];
-		let totalCount = 0;
-		
-		const initialParams: any = {
-			page: 1,
-			page_size: 100,
+		const params: any = {
+			page: options.page || 1,
+			page_size: options.page_size || 15,
 			...options
 		};
 
-		const initialResponse = await axios.get(`${proxyUrl}/https://hub.docker.com/v2/repositories/${repository}/${selectedRepo}/tags`, {
+		const response = await axios.get(`${proxyUrl}/https://hub.docker.com/v2/repositories/${repository}/${selectedRepo}/tags`, {
 			headers: {
 				Authorization: `JWT ${token}`
 			},
-			params: initialParams
+			params
 		});
 
-		totalCount = initialResponse.data.count;
-		allResults = [...initialResponse.data.results];
-
-		const totalPages = Math.ceil(totalCount / 100);
-
-		for (let page = 2; page <= totalPages; page++) {
-			const response = await axios.get(`${proxyUrl}/https://hub.docker.com/v2/repositories/${repository}/${selectedRepo}/tags`, {
-				headers: {
-					Authorization: `JWT ${token}`
-				},
-				params: {
-					...options,
-					page,
-					page_size: 100
-				}
-			});
-			allResults = [...allResults, ...response.data.results];
-		}
-
 		return {
-			count: totalCount,
-			results: allResults
+			count: response.data.count,
+			results: response.data.results,
+			next: response.data.next ? true : false,
+			page: params.page
 		};
 	} catch (error) {
 		console.error('Error:', error);

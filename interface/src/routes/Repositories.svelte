@@ -67,6 +67,11 @@
     { name: 'Copy', visible: true, width: '10%', sortKey: '' }
   ];
 
+  let currentTagPage = 1;
+  let hasMoreTags = false;
+  let isLoadingMoreTags = false;
+  let tagSearchTimeout: number | null = null;
+
   onMount(async () => {
     const savedTheme = storage.getLocal('DTVTheme');
     darkMode = savedTheme === 'dark';
@@ -106,9 +111,12 @@
       selectedRepoName = repoName;
       isModalOpen = true;
       isLoadingTags = true;
-      const tags = await getRepositoryTags(repoName, {}, window);
+      currentTagPage = 1;
+      
+      const tags = await getRepositoryTags(repoName, { page: 1, page_size: 15 }, window);
       allTags = tags?.results || [];
       selectedRepoTags = allTags;
+      hasMoreTags = tags?.next || false;
     } catch (error) {
       console.error('Error:', error);
     } finally {
@@ -158,17 +166,6 @@
     window.location.reload();
   }
 
-  $: {
-    if (tagSearchTerm === '') {
-      selectedRepoTags = allTags;
-    } else {
-      const searchLower = tagSearchTerm.toLowerCase();
-      selectedRepoTags = allTags.filter(tag => 
-        tag.name.toLowerCase().includes(searchLower)
-      );
-    }
-  }
-
   function sortData<T>(data: T[], config: SortConfig, columnTypes: Record<string, string> = {}): T[] {
     if (!config.column) return data;
     
@@ -204,6 +201,7 @@
       repoSortConfig = { ...config };
     } else {
       tagSortConfig = { ...config };
+      refreshTags();
     }
   }
 
@@ -246,9 +244,18 @@
     
     try {
       isLoadingTags = true;
-      const tags = await getRepositoryTags(selectedRepoName, {}, window);
+      currentTagPage = 1;
+      const tags = await getRepositoryTags(selectedRepoName, { 
+        page: 1, 
+        page_size: 15,
+        name: tagSearchTerm || undefined,
+        ordering: tagSortConfig.column ? 
+          (tagSortConfig.direction === 'asc' ? tagSortConfig.column : `-${tagSortConfig.column}`) : 
+          undefined
+      }, window);
       allTags = tags?.results || [];
       selectedRepoTags = allTags;
+      hasMoreTags = tags?.next || false;
     } catch (error) {
       console.error('Error:', error);
     } finally {
@@ -256,9 +263,43 @@
     }
   }
 
+  async function loadMoreTags() {
+    if (!selectedRepoName || isLoadingMoreTags || !hasMoreTags) return;
+    
+    try {
+      isLoadingMoreTags = true;
+      currentTagPage += 1;
+      const tags = await getRepositoryTags(selectedRepoName, { 
+        page: currentTagPage, 
+        page_size: 15,
+        name: tagSearchTerm || undefined,
+        ordering: tagSortConfig.column ? 
+          (tagSortConfig.direction === 'asc' ? tagSortConfig.column : `-${tagSortConfig.column}`) : 
+          undefined
+      }, window);
+      
+      const newTags = tags?.results || [];
+      allTags = [...allTags, ...newTags];
+      selectedRepoTags = [...selectedRepoTags, ...newTags];
+      hasMoreTags = tags?.next || false;
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      isLoadingMoreTags = false;
+    }
+  }
+
+  function handleTagScroll(event: UIEvent) {
+    const element = event.target as HTMLElement;
+    if (element.scrollHeight - element.scrollTop <= element.clientHeight + 200) {
+      loadMoreTags();
+    }
+  }
+
   function isToday(dateString: string): boolean {
     const today = new Date();
     const date = new Date(dateString);
+    
     return date.getDate() === today.getDate() &&
       date.getMonth() === today.getMonth() &&
       date.getFullYear() === today.getFullYear();
@@ -330,6 +371,39 @@
     if (allTags.length === 0) return false;
     const latestDate = Math.max(...allTags.map(t => new Date(t.last_updated).getTime()));
     return new Date(tag.last_updated).getTime() === latestDate;
+  }
+
+  async function handleTagSearch(event: Event) {
+    const searchValue = (event.target as HTMLInputElement).value;
+    tagSearchTerm = searchValue;
+    
+    if (tagSearchTimeout) {
+      clearTimeout(tagSearchTimeout);
+    }
+    
+    tagSearchTimeout = setTimeout(async () => {
+      try {
+        isLoadingTags = true;
+        currentTagPage = 1;
+        
+        const tags = await getRepositoryTags(selectedRepoName, { 
+          page: 1, 
+          page_size: 15,
+          name: searchValue || undefined,
+          ordering: tagSortConfig.column ? 
+            (tagSortConfig.direction === 'asc' ? tagSortConfig.column : `-${tagSortConfig.column}`) : 
+            undefined
+        }, window);
+        
+        allTags = tags?.results || [];
+        selectedRepoTags = allTags;
+        hasMoreTags = tags?.next || false;
+      } catch (error) {
+        console.error('Error:', error);
+      } finally {
+        isLoadingTags = false;
+      }
+    }, 500);
   }
 </script>
 
@@ -429,32 +503,29 @@
   >
     <ModalBody>
       <h2 class="selected-repo-name-title">{selectedRepoName}</h2>
-      {#if isLoadingTags}
-        <div class="loader-container">
-          <div class="loader"></div>
-        </div>
-      {:else}
-        <div class="table-container modal-table" class:dark={darkMode}>
-          <div class="sticky-header">
-            <div class="controls-container">
-              <SearchBar
-                bind:value={tagSearchTerm}
-                bind:inputRef={modalSearchBarRef}
-                placeholder="Search tags..."
-                {darkMode}
-                onRefresh={refreshTags}
-              />
-              <ThemeToggle 
-                {darkMode} 
-                on:themeChange={(e) => darkMode = e.detail} 
-              />
-              <ColumnSelector 
-                {darkMode}
-                columns={tagTableColumns}
-                on:select={handleTagColumnToggle}
-              />
-            </div>
+      <div class="table-container modal-table" class:dark={darkMode}>
+        <div class="sticky-header">
+          <div class="controls-container">
+            <SearchBar
+              bind:value={tagSearchTerm}
+              bind:inputRef={modalSearchBarRef}
+              placeholder="Search tags..."
+              {darkMode}
+              onRefresh={refreshTags}
+              onInput={handleTagSearch}
+            />
+            <ThemeToggle 
+              {darkMode} 
+              on:themeChange={(e) => darkMode = e.detail} 
+            />
+            <ColumnSelector 
+              {darkMode}
+              columns={tagTableColumns}
+              on:select={handleTagColumnToggle}
+            />
+          </div>
 
+          {#if !isLoadingTags}
             <div class="table-header">
               <Table striped hover responsive class={darkMode ? 'table-dark' : ''}>
                 <thead>
@@ -474,9 +545,15 @@
                 </thead>
               </Table>
             </div>
-          </div>
+          {/if}
+        </div>
 
-          <div class="table-body">
+        <div class="table-body" on:scroll={handleTagScroll}>
+          {#if isLoadingTags}
+            <div class="loader-container">
+              <div class="loader"></div>
+            </div>
+          {:else}
             {#key tagTableColumns}
               <Table striped hover responsive class={darkMode ? 'table-dark' : ''}>
                 <tbody>
@@ -519,10 +596,15 @@
                   {/each}
                 </tbody>
               </Table>
+              {#if isLoadingMoreTags}
+                <div class="loader-container">
+                  <div class="loader"></div>
+                </div>
+              {/if}
             {/key}
-          </div>
+          {/if}
         </div>
-      {/if}
+      </div>
     </ModalBody>
   </Modal>
 
