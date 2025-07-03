@@ -168,7 +168,7 @@
 	{/if}
 	<div class="{maxHeight} overflow-y-auto" on:scroll={handleScroll}>
 		<table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-			<thead class="sticky top-0 bg-gray-50 dark:bg-gray-900">
+			<thead class="sticky top-0 z-10 bg-gray-50 dark:bg-gray-900">
 				<tr>
 					{#each columns as column}
 						<th

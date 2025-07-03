@@ -5,6 +5,7 @@
 	import Header from '$lib/components/Header.svelte';
 	import Badge from '$lib/components/Badge.svelte';
 	import Table from '$lib/components/Table.svelte';
+	import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
 	import type { Column } from '$lib/components/Table.types';
 	import { currentLanguage, t, loadLanguageTranslations } from '$lib/stores/i18n';
 
@@ -116,7 +117,7 @@
 	}
 
 	function selectRepository(repoName: string) {
-		goto(`/tags/${repoName}`);
+		goto(`/repository/${repoName}`);
 	}
 
 	function handleRepositoryClick(row: any) {
@@ -174,6 +175,7 @@
 				<div class="h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600"></div>
 			</div>
 		{:else}
+			<Breadcrumbs />
 			<div class="mb-6">
 				<h2 class="text-2xl font-bold text-gray-900 dark:text-white">{translations.repoTitle}</h2>
 			</div>

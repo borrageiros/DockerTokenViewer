@@ -5,10 +5,10 @@
 	async function handleLogout() {
 		try {
 			await logout();
-			goto('/login');
+			location.href = '/login';
 		} catch (error) {
 			console.error('Logout error:', error);
-			goto('/login');
+			location.href = '/login';
 		}
 	}
 </script>

@@ -63,5 +63,34 @@
     "loading": "Cargando tags...",
     "empty": "No se encontraron tags",
     "error": "Error al cargar tags"
+  },
+  "tagDetails": {
+    "title": "Detalles del tag {tag}",
+    "loading": "Cargando detalles del tag...",
+    "error": "Error al cargar detalles del tag",
+    "info": {
+      "title": "Información General",
+      "name": "Nombre del tag",
+      "size": "Tamaño total",
+      "lastUpdated": "Última actualización",
+      "pushedBy": "Subido por",
+      "pullCount": "Veces descargado",
+      "digest": "Digest",
+      "mediaType": "Tipo de media"
+    },
+    "images": {
+      "title": "Imágenes",
+      "architecture": "Arquitectura",
+      "os": "Sistema operativo",
+      "size": "Tamaño",
+      "digest": "Digest",
+      "status": "Estado"
+    },
+    "commands": {
+      "title": "Comandos",
+      "pullCommand": "Comando de descarga",
+      "copy": "Copiar",
+      "copied": "¡Copiado!"
+    }
   }
 }

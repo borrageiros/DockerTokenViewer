@@ -64,5 +64,34 @@
     "loading": "Loading tags...",
     "empty": "No tags found",
     "error": "Error loading tags"
+  },
+  "tagDetails": {
+    "title": "Tag {tag} details",
+    "loading": "Loading tag details...",
+    "error": "Error loading tag details",
+    "info": {
+      "title": "General Information",
+      "name": "Tag name",
+      "size": "Total size",
+      "lastUpdated": "Last updated",
+      "pushedBy": "Pushed by",
+      "pullCount": "Pull count",
+      "digest": "Digest",
+      "mediaType": "Media type"
+    },
+    "images": {
+      "title": "Images",
+      "architecture": "Architecture",
+      "os": "Operating system",
+      "size": "Size",
+      "digest": "Digest",
+      "status": "Status"
+    },
+    "commands": {
+      "title": "Commands",
+      "pullCommand": "Pull command",
+      "copy": "Copy",
+      "copied": "Copied!"
+    }
   }
 }

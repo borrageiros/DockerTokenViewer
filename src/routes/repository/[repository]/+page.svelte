@@ -5,6 +5,7 @@
 	import { getRepositoryTags, type Tag } from '$lib/api';
 	import Header from '$lib/components/Header.svelte';
 	import Table from '$lib/components/Table.svelte';
+	import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
 	import type { Column } from '$lib/components/Table.types';
 	import { currentLanguage, t, loadLanguageTranslations } from '$lib/stores/i18n';
 
@@ -20,6 +21,7 @@
 	let latestTag: string | null = null;
 	let searchTerm = '';
 	let initialLoading = true;
+	let openDropdown: string | null = null;
 
 	$: repository = $page.params.repository;
 
@@ -39,7 +41,10 @@
 			tagsError: t('tags.error', language),
 			latestBadge: t('tags.latest', language),
 			refreshTooltip: t('table.refresh', language),
-			searchPlaceholder: t('table.search', language)
+			searchPlaceholder: t('table.search', language),
+			copyImageTag: $currentLanguage === 'es' ? 'Copiar imagen:tag' : 'Copy image:tag',
+			copyOnlyTag: $currentLanguage === 'es' ? 'Copiar tag' : 'Copy tag',
+			copyPullCommand: $currentLanguage === 'es' ? 'Copiar comando de pull' : 'Copy pull command'
 		};
 
 		columns = [
@@ -77,15 +82,45 @@
 
 	async function copyToClipboard(text: string) {
 		try {
-			await navigator.clipboard.writeText(text);
-			// TODO: Show temporary "copied" feedback
+			await navigator.clipboard.writeText(text).catch((err) => console.error('Error:', err));
 		} catch (err) {
 			console.error('Failed to copy: ', err);
 		}
 	}
 
-	function backToRepositories() {
-		goto('/');
+	function copyImageTag(imageName: string, tagName: string) {
+		copyToClipboard(`${imageName}:${tagName}`);
+	}
+
+	function copyTag(tagName: string) {
+		copyToClipboard(tagName);
+	}
+
+	function copyPullCommand(imageName: string, tagName: string) {
+		copyToClipboard(`docker pull ${imageName}:${tagName}`);
+	}
+
+	function toggleDropdown(tagName: string) {
+		openDropdown = openDropdown === tagName ? null : tagName;
+	}
+
+	function handleCopyAction(action: string, tagName: string) {
+		switch (action) {
+			case 'imageTag':
+				copyImageTag(repository, tagName);
+				break;
+			case 'tag':
+				copyTag(tagName);
+				break;
+			case 'pullCommand':
+				copyPullCommand(repository, tagName);
+				break;
+		}
+		openDropdown = null;
+	}
+
+	function handleTagClick(row: any) {
+		goto(`/repository/${repository}/${row.name}`);
 	}
 
 	async function getLatestTag() {
@@ -182,6 +217,20 @@
 	onMount(() => {
 		document.title = `Tags - ${repository} - DockerTokenViewer`;
 		initializePage();
+
+		// Close dropdown when clicking outside
+		function handleClickOutside(event: Event) {
+			const target = event.target as HTMLElement;
+			if (!target.closest('.dropdown-container')) {
+				openDropdown = null;
+			}
+		}
+
+		document.addEventListener('click', handleClickOutside);
+
+		return () => {
+			document.removeEventListener('click', handleClickOutside);
+		};
 	});
 
 	$: if (!isLoading && repository) {
@@ -198,16 +247,10 @@
 				<div class="h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600"></div>
 			</div>
 		{:else}
+			<Breadcrumbs currentRepository={repository} />
+
 			<div class="mb-6">
-				<div class="flex items-center space-x-4">
-					<button
-						on:click={backToRepositories}
-						class="font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-					>
-						{translations.backToRepos}
-					</button>
-				</div>
-				<h2 class="mt-2 text-2xl font-bold text-gray-900 dark:text-white">
+				<h2 class="text-2xl font-bold text-gray-900 dark:text-white">
 					{translations.tagsTitle}
 				</h2>
 			</div>
@@ -231,6 +274,7 @@
 				onSearch={handleSearch}
 				searchValue={searchTerm}
 				searchPlaceholder={translations.searchPlaceholder}
+				onRowClick={handleTagClick}
 			>
 				<svelte:fragment slot="cell" let:row let:column let:value>
 					{#if column.key === 'name'}
@@ -259,21 +303,58 @@
 							{formatDate(value as string)}
 						</div>
 					{:else if column.key === 'copy'}
-						<button
-							on:click={() => copyToClipboard(`docker pull ${repository}:${row.name}`)}
-							class="rounded p-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-							title={translations.copyTooltip}
-							aria-label={translations.copyTooltip}
-						>
-							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path
+						<div class="dropdown-container relative">
+							<button
+								on:click|stopPropagation={() => toggleDropdown(row.name as string)}
+								class="rounded p-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+								title={translations.copyTooltip}
+								aria-label={translations.copyTooltip}
+							>
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									width="16"
+									height="16"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
 									stroke-linecap="round"
 									stroke-linejoin="round"
-									stroke-width="2"
-									d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
-								/>
-							</svg>
-						</button>
+								>
+									<path
+										d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"
+									/>
+									<rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+								</svg>
+							</button>
+
+							{#if openDropdown === (row.name as string)}
+								<div
+									class="ring-opacity-5 absolute right-0 z-[100] mt-1 w-48 rounded-md bg-white py-1 shadow-lg ring-1 ring-black dark:bg-gray-800"
+								>
+									<button
+										on:click|stopPropagation={() =>
+											handleCopyAction('imageTag', row.name as string)}
+										class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+									>
+										{translations.copyImageTag}
+									</button>
+									<button
+										on:click|stopPropagation={() => handleCopyAction('tag', row.name as string)}
+										class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+									>
+										{translations.copyOnlyTag}
+									</button>
+									<button
+										on:click|stopPropagation={() =>
+											handleCopyAction('pullCommand', row.name as string)}
+										class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+									>
+										{translations.copyPullCommand}
+									</button>
+								</div>
+							{/if}
+						</div>
 					{/if}
 				</svelte:fragment>
 			</Table>

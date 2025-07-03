@@ -1,11 +1,19 @@
 <script lang="ts">
 	import '../app.css';
 	import theme, { type Theme } from '$lib/stores/theme';
+	import { setBaseRepository } from '$lib/stores/repository';
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
+	import type { LayoutData } from './$types';
 
-	let { children } = $props();
+	let { children, data }: { children: any; data: LayoutData } = $props();
 	let currentTheme: Theme;
+
+	$effect(() => {
+		if (data?.baseRepository !== undefined) {
+			setBaseRepository(data.baseRepository);
+		}
+	});
 
 	theme.subscribe((value) => {
 		currentTheme = value;
