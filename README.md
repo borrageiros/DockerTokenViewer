@@ -12,9 +12,9 @@ DockerTokenViewer is an alternative to the DockerHub frontend, designed to allow
 
 - Official DockerHub API: Interacts with the official DockerHub API to fetch and display data.
 - Built With:
-    - **Express**: Backend framework for handling requests.
-    - **Cors Anywhere**: Enables the tool to bypass CORS restrictions.
-    - **Svelte & Sveltestrap**: Frontend built with Svelte and styled using Sveltestrap for a responsive and clean interface.
+  - **Express**: Backend framework for handling requests.
+  - **Cors Anywhere**: Enables the tool to bypass CORS restrictions.
+  - **Svelte & Sveltestrap**: Frontend built with Svelte and styled using Sveltestrap for a responsive and clean interface.
 
 ![screenshot](./screenshot.gif)
 

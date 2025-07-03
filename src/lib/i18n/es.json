@@ -1,0 +1,67 @@
+{
+  "login": {
+    "title": "Docker Token Viewer",
+    "subtitle": "Inicia sesión para acceder a tus repositorios",
+    "repository": "Repositorio",
+    "token": "Token de Docker Hub",
+    "remember": "Recordar sesión",
+    "submit": "Iniciar sesión",
+    "howToGetToken": "¿Cómo obtener un token?",
+    "step1": "Ve a",
+    "step1Link": "Docker Hub Security",
+    "step2": "Haz clic en \"New Access Token\"",
+    "step3": "Dale un nombre descriptivo y selecciona permisos de lectura",
+    "step4": "Copia el token generado y úsalo para iniciar sesión aquí",
+    "errors": {
+      "required": "Por favor, completa todos los campos",
+      "unauthorized": "Credenciales inválidas o sin permisos",
+      "connection": "Error de conexión. Inténtalo de nuevo."
+    }
+  },
+  "header": {
+    "language": "Idioma",
+    "theme": "Tema",
+    "session": "Sesión"
+  },
+  "table": {
+    "refresh": "Recargar",
+    "search": "Buscar..."
+  },
+  "repositories": {
+    "title": "Repositorios",
+    "table": {
+      "name": "Nombre",
+      "description": "Descripción",
+      "downloads": "Descargas",
+      "size": "Tamaño",
+      "lastUpdate": "Última actualización"
+    },
+    "badges": {
+      "today": "HOY",
+      "yesterday": "AYER",
+      "lastDays": "ÚLTIMOS DÍAS",
+      "lastDaysTooltip": "Actualizado en los últimos 7 días"
+    },
+    "noDescription": "Sin descripción",
+    "loading": "Cargando repositorios...",
+    "empty": "No se encontraron repositorios",
+    "error": "Error al cargar repositorios"
+  },
+  "tags": {
+    "title": "Tags de {repository}",
+    "backToRepos": "← Volver a repositorios",
+    "table": {
+      "name": "Nombre",
+      "size": "Tamaño",
+      "pushedBy": "Subido por",
+      "lastUpdate": "Última actualización",
+      "copy": "Copiar"
+    },
+    "copyTooltip": "Copiar comando docker pull",
+    "copied": "¡Copiado!",
+    "latest": "LATEST",
+    "loading": "Cargando tags...",
+    "empty": "No se encontraron tags",
+    "error": "Error al cargar tags"
+  }
+}
