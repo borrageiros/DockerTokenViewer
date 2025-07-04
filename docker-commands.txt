@@ -1,0 +1,25 @@
+ARM64
+
+docker stop dockertokenviewer && \
+docker rm dockertokenviewer && \
+docker buildx build --platform linux/arm64 -t docker-token-viewer:arm64 . && \
+docker tag docker-token-viewer:arm64 borrageiros/docker-token-viewer:arm64 && \
+docker push borrageiros/docker-token-viewer:arm64 && \
+docker run -d \
+  -p 1237:3000 \
+  --name dockertokenviewer \
+  --restart on-failure \
+  borrageiros/docker-token-viewer:arm64
+
+LATEST
+
+docker stop dockertokenviewer && \
+docker rm dockertokenviewer && \
+docker buildx build --platform linux/amd64 -t docker-token-viewer:latest . && \
+docker tag docker-token-viewer:latest borrageiros/docker-token-viewer:latest && \
+docker push borrageiros/docker-token-viewer:latest && \
+docker run -d \
+  -p 1237:3000 \
+  --name dockertokenviewer \
+  --restart on-failure \
+  borrageiros/docker-token-viewer:latest

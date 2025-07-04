@@ -1,0 +1,104 @@
+{
+  "login": {
+    "title": "Docker Token Viewer",
+    "subtitle": "Sign in to access your repositories",
+    "repository": "User or organization",
+    "token": "Docker Hub Token",
+    "remember": "Remember session",
+    "submit": "Sign in",
+    "howToGetToken": "How to get a token?",
+    "step1": "Go to",
+    "step1Link": "Docker Hub Security",
+    "step2": "Click on \"New Access Token\"",
+    "step3": "Give it a descriptive name and select read permissions",
+    "step4": "Copy the generated token and use it to sign in here",
+    "errors": {
+      "required": "Please fill in all fields",
+      "unauthorized": "Invalid credentials or no permissions",
+      "connection": "Connection error. Please try again."
+    }
+  },
+  "header": {
+    "language": "Language",
+    "theme": "Theme",
+    "session": "Session"
+  },
+  "table": {
+    "refresh": "Refresh",
+    "search": "Search...",
+    "settings": "Configure columns",
+    "columnsLabel": "Visible columns",
+    "empty": "No data available"
+  },
+  "repositories": {
+    "title": "Repositories",
+    "subtitle": "Manage your Docker repositories",
+    "table": {
+      "name": "Name",
+      "description": "Description",
+      "downloads": "Downloads",
+      "size": "Size",
+      "lastUpdate": "Last update"
+    },
+    "badges": {
+      "today": "TODAY",
+      "yesterday": "YESTERDAY",
+      "lastDays": "7D",
+      "lastDaysTooltip": "Updated in the last 7 days"
+    },
+    "noDescription": "No description",
+    "loading": "Loading repositories...",
+    "empty": "No repositories found",
+    "error": "Error loading repositories"
+  },
+  "tags": {
+    "title": "Tags for {repository}",
+    "backToRepos": "← Back to repositories",
+    "table": {
+      "name": "Name",
+      "size": "Size",
+      "pushedBy": "Pushed by",
+      "lastUpdate": "Last update",
+      "copy": "Copy"
+    },
+    "copyRepoImageTag": "Copy repo/image:tag",
+    "copyImageTag": "Copy image:tag",
+    "copyOnlyTag": "Copy tag",
+    "copyPullCommand": "Copy pull command",
+    "copyTooltip": "Copy docker pull command",
+    "copied": "Copied!",
+    "latest": "LATEST",
+    "loading": "Loading tags...",
+    "empty": "No tags found",
+    "error": "Error loading tags"
+  },
+  "tagDetails": {
+    "title": "Tag {tag} details",
+    "loading": "Loading tag details...",
+    "error": "Error loading tag details",
+    "info": {
+      "title": "General Information",
+      "name": "Tag name",
+      "size": "Total size",
+      "lastUpdated": "Last updated",
+      "pushedBy": "Pushed by",
+      "pullCount": "Pull count",
+      "digest": "Digest",
+      "mediaType": "Media type"
+    },
+    "images": {
+      "title": "Images",
+      "architecture": "Architecture",
+      "os": "Operating system",
+      "size": "Size",
+      "digest": "Digest",
+      "status": "Status"
+    },
+    "commands": {
+      "title": "Commands",
+      "pullCommand": "Pull command",
+      "copy": "Copy",
+      "copied": "Copied!"
+    }
+  }
+}
