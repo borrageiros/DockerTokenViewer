@@ -5,6 +5,7 @@
 	import Header from '$lib/components/Header.svelte';
 	import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
 	import { currentLanguage, t, loadLanguageTranslations } from '$lib/stores/i18n';
+	import { formatBytes, formatDate, copyPullCommand, getPullCommand } from '$lib/utils/common';
 
 	let tagDetails: Tag | null = null;
 	let isLoading = false;
@@ -47,42 +48,6 @@
 				copied: t('tagDetails.commands.copied', language)
 			}
 		};
-	}
-
-	function formatBytes(bytes: number | undefined | null): string {
-		if (!bytes || bytes === 0) return '0 B';
-		const k = 1024;
-		const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-		const i = Math.floor(Math.log(bytes) / Math.log(k));
-		return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-	}
-
-	function formatDate(dateString: string | undefined | null): string {
-		if (!dateString) return '-';
-		try {
-			const localeCode = $currentLanguage === 'es' ? 'es-ES' : 'en-US';
-			return new Date(dateString).toLocaleDateString(localeCode, {
-				year: 'numeric',
-				month: 'long',
-				day: 'numeric',
-				hour: '2-digit',
-				minute: '2-digit'
-			});
-		} catch (error) {
-			return '-';
-		}
-	}
-
-	async function copyToClipboard(text: string) {
-		try {
-			await navigator.clipboard.writeText(text);
-		} catch (err) {
-			console.error('Failed to copy: ', err);
-		}
-	}
-
-	function copyPullCommand() {
-		copyToClipboard(`docker pull ${repository}:${tag}`);
 	}
 
 	async function loadTagDetails() {
@@ -301,20 +266,21 @@
 							<div class="p-6">
 								<div class="space-y-4">
 									<div>
-										<label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+										<p class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
 											{translations.commands.pullCommand}
-										</label>
+										</p>
 										<div class="flex">
 											<input
 												type="text"
-												value={`docker pull ${repository}:${tag}`}
+												value={getPullCommand(repository, tag)}
 												readonly
 												class="flex-1 rounded-l-md border border-gray-300 bg-gray-50 px-3 py-2 font-mono text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
 											/>
 											<button
-												on:click={copyPullCommand}
+												on:click={() => copyPullCommand(repository, tag)}
 												class="rounded-r-md border border-l-0 border-gray-300 bg-blue-50 px-3 py-2 text-blue-600 hover:bg-blue-100 dark:border-gray-600 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800"
 												title={translations.commands.copy}
+												aria-label={translations.commands.copy}
 											>
 												<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 													<path

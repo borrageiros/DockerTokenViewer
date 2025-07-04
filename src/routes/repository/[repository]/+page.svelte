@@ -6,8 +6,22 @@
 	import Header from '$lib/components/Header.svelte';
 	import Table from '$lib/components/Table.svelte';
 	import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
+	import Badge from '$lib/components/Badge.svelte';
 	import type { Column } from '$lib/components/Table.types';
 	import { currentLanguage, t, loadLanguageTranslations } from '$lib/stores/i18n';
+	import { DEFAULT_PAGE_SIZE } from '$lib/consts';
+	import {
+		formatBytes,
+		formatDate,
+		isToday,
+		isYesterday,
+		isThisWeek,
+		copyTag,
+		copyImageTag,
+		copyRepoImageTag,
+		copyPullCommand,
+		getLatestFromResults
+	} from '$lib/utils/common';
 
 	let tags: Tag[] = [];
 	let isLoading = false;
@@ -42,9 +56,17 @@
 			latestBadge: t('tags.latest', language),
 			refreshTooltip: t('table.refresh', language),
 			searchPlaceholder: t('table.search', language),
-			copyImageTag: $currentLanguage === 'es' ? 'Copiar imagen:tag' : 'Copy image:tag',
-			copyOnlyTag: $currentLanguage === 'es' ? 'Copiar tag' : 'Copy tag',
-			copyPullCommand: $currentLanguage === 'es' ? 'Copiar comando de pull' : 'Copy pull command'
+			settingsTooltip: t('table.settings', language),
+			columnsLabel: t('table.columnsLabel', language),
+			emptyMessage: t('table.empty', language),
+			copyRepoImageTag: t('tags.copyRepoImageTag', language),
+			copyImageTag: t('tags.copyImageTag', language),
+			copyOnlyTag: t('tags.copyOnlyTag', language),
+			copyPullCommand: t('tags.copyPullCommand', language),
+			badgeToday: t('repositories.badges.today', language),
+			badgeYesterday: t('repositories.badges.yesterday', language),
+			badgeLastDays: t('repositories.badges.lastDays', language),
+			badgeLastDaysTooltip: t('repositories.badges.lastDaysTooltip', language)
 		};
 
 		columns = [
@@ -56,56 +78,15 @@
 		];
 	}
 
-	function formatBytes(bytes: number | undefined | null): string {
-		if (!bytes || bytes === 0) return '0 B';
-		const k = 1024;
-		const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-		const i = Math.floor(Math.log(bytes) / Math.log(k));
-		return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-	}
-
-	function formatDate(dateString: string | undefined | null): string {
-		if (!dateString) return '-';
-		try {
-			const localeCode = $currentLanguage === 'es' ? 'es-ES' : 'en-US';
-			return new Date(dateString).toLocaleDateString(localeCode, {
-				year: 'numeric',
-				month: 'short',
-				day: 'numeric',
-				hour: '2-digit',
-				minute: '2-digit'
-			});
-		} catch (error) {
-			return '-';
-		}
-	}
-
-	async function copyToClipboard(text: string) {
-		try {
-			await navigator.clipboard.writeText(text).catch((err) => console.error('Error:', err));
-		} catch (err) {
-			console.error('Failed to copy: ', err);
-		}
-	}
-
-	function copyImageTag(imageName: string, tagName: string) {
-		copyToClipboard(`${imageName}:${tagName}`);
-	}
-
-	function copyTag(tagName: string) {
-		copyToClipboard(tagName);
-	}
-
-	function copyPullCommand(imageName: string, tagName: string) {
-		copyToClipboard(`docker pull ${imageName}:${tagName}`);
-	}
-
 	function toggleDropdown(tagName: string) {
 		openDropdown = openDropdown === tagName ? null : tagName;
 	}
 
 	function handleCopyAction(action: string, tagName: string) {
 		switch (action) {
+			case 'repoImageTag':
+				copyRepoImageTag(repository, tagName);
+				break;
 			case 'imageTag':
 				copyImageTag(repository, tagName);
 				break;
@@ -123,27 +104,6 @@
 		goto(`/repository/${repository}/${row.name}`);
 	}
 
-	async function getLatestTag() {
-		try {
-			const response = await getRepositoryTags(repository, {
-				page_size: 100
-			});
-
-			if (response.results.length === 0) return null;
-
-			const latestTag = response.results.reduce((latest, current) => {
-				const latestDate = new Date(latest.last_updated);
-				const currentDate = new Date(current.last_updated);
-				return currentDate > latestDate ? current : latest;
-			});
-
-			return latestTag.name;
-		} catch (error) {
-			console.error('Error loading latest tag:', error);
-			return null;
-		}
-	}
-
 	async function loadTags(search?: string) {
 		try {
 			isLoading = true;
@@ -151,14 +111,16 @@
 			currentPage = 1;
 
 			const searchOptions = search ? { name: search } : {};
-			const [tagsResponse, latest] = await Promise.all([
-				getRepositoryTags(repository, { page: 1, page_size: 20, ...searchOptions }),
-				getLatestTag()
-			]);
+			const tagsResponse = await getRepositoryTags(repository, {
+				page: 1,
+				page_size: DEFAULT_PAGE_SIZE,
+				...searchOptions
+			});
 
 			tags = tagsResponse.results;
 			hasMore = tagsResponse.next;
-			latestTag = latest;
+			const latestTagResult = getLatestFromResults(tagsResponse.results);
+			latestTag = latestTagResult?.name || null;
 		} catch (e) {
 			console.error('Error loading tags:', e);
 			error = translations.tagsError || 'Error loading tags';
@@ -182,7 +144,7 @@
 			const searchOptions = searchTerm ? { name: searchTerm } : {};
 			const tagsResponse = await getRepositoryTags(repository, {
 				page: currentPage,
-				page_size: 20,
+				page_size: DEFAULT_PAGE_SIZE,
 				...searchOptions
 			});
 			tags = [...tags, ...tagsResponse.results];
@@ -266,7 +228,7 @@
 				rows={tags as any[]}
 				{isLoading}
 				isEmpty={tags.length === 0}
-				emptyMessage={translations.tagsEmpty}
+				emptyMessage={translations.emptyMessage}
 				onScroll={handleScroll}
 				{isLoadingMore}
 				onRefresh={() => loadTags()}
@@ -274,6 +236,8 @@
 				onSearch={handleSearch}
 				searchValue={searchTerm}
 				searchPlaceholder={translations.searchPlaceholder}
+				settingsTooltip={translations.settingsTooltip}
+				columnsLabel={translations.columnsLabel}
 				onRowClick={handleTagClick}
 			>
 				<svelte:fragment slot="cell" let:row let:column let:value>
@@ -299,8 +263,19 @@
 							{value || '-'}
 						</div>
 					{:else if column.key === 'last_updated'}
-						<div class="text-sm text-gray-900 dark:text-white">
-							{formatDate(value as string)}
+						<div class="flex items-center text-sm text-gray-900 dark:text-white">
+							<span class="mr-2">{formatDate(value as string, $currentLanguage)}</span>
+							{#if isToday(value as string)}
+								<Badge text={translations.badgeToday} color="success" />
+							{:else if isYesterday(value as string)}
+								<Badge text={translations.badgeYesterday} color="warning" />
+							{:else if isThisWeek(value as string)}
+								<Badge
+									text={translations.badgeLastDays}
+									color="danger"
+									tooltipText={translations.badgeLastDaysTooltip}
+								/>
+							{/if}
 						</div>
 					{:else if column.key === 'copy'}
 						<div class="dropdown-container relative">
@@ -333,6 +308,12 @@
 									class="ring-opacity-5 absolute right-0 z-[100] mt-1 w-48 rounded-md bg-white py-1 shadow-lg ring-1 ring-black dark:bg-gray-800"
 								>
 									<button
+										on:click|stopPropagation={() => handleCopyAction('tag', row.name as string)}
+										class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+									>
+										{translations.copyOnlyTag}
+									</button>
+									<button
 										on:click|stopPropagation={() =>
 											handleCopyAction('imageTag', row.name as string)}
 										class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
@@ -340,10 +321,11 @@
 										{translations.copyImageTag}
 									</button>
 									<button
-										on:click|stopPropagation={() => handleCopyAction('tag', row.name as string)}
+										on:click|stopPropagation={() =>
+											handleCopyAction('repoImageTag', row.name as string)}
 										class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
 									>
-										{translations.copyOnlyTag}
+										{translations.copyRepoImageTag}
 									</button>
 									<button
 										on:click|stopPropagation={() =>

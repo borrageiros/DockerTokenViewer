@@ -2,7 +2,7 @@
   "login": {
     "title": "Docker Token Viewer",
     "subtitle": "Sign in to access your repositories",
-    "repository": "Repository",
+    "repository": "User or organization",
     "token": "Docker Hub Token",
     "remember": "Remember session",
     "submit": "Sign in",
@@ -25,7 +25,10 @@
   },
   "table": {
     "refresh": "Refresh",
-    "search": "Search..."
+    "search": "Search...",
+    "settings": "Configure columns",
+    "columnsLabel": "Visible columns",
+    "empty": "No data available"
   },
   "repositories": {
     "title": "Repositories",
@@ -58,6 +61,10 @@
       "lastUpdate": "Last update",
       "copy": "Copy"
     },
+    "copyRepoImageTag": "Copy repo/image:tag",
+    "copyImageTag": "Copy image:tag",
+    "copyOnlyTag": "Copy tag",
+    "copyPullCommand": "Copy pull command",
     "copyTooltip": "Copy docker pull command",
     "copied": "Copied!",
     "latest": "LATEST",

@@ -1,4 +1,5 @@
 import { goto } from '$app/navigation';
+import { setBaseRepository } from '$lib/stores/repository';
 
 const proxy = '/api/proxy';
 
@@ -35,6 +36,7 @@ async function fetchWithAuth<T>(
 
 	if (response.status === 401) {
 		if (typeof window !== 'undefined') {
+			setBaseRepository(null);
 			goto('/login');
 		}
 		throw new Error('Authentication failed');

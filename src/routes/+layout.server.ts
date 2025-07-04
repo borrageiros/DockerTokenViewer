@@ -7,12 +7,9 @@ export const load: LayoutServerLoad = async ({ cookies }) => {
 	if (repositoryCookie) {
 		try {
 			baseRepository = JSON.parse(repositoryCookie);
-			console.log('Base repository loaded from cookie:', baseRepository);
 		} catch (error) {
 			console.error('Error parsing repository cookie:', error);
 		}
-	} else {
-		console.log('No repository cookie found');
 	}
 
 	return {

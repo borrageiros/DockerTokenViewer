@@ -1,13 +1,15 @@
 <script lang="ts">
 	import { logout } from '$lib/api';
-	import { goto } from '$app/navigation';
+	import { setBaseRepository } from '$lib/stores/repository';
 
 	async function handleLogout() {
 		try {
 			await logout();
+			setBaseRepository(null);
 			location.href = '/login';
 		} catch (error) {
 			console.error('Logout error:', error);
+			setBaseRepository(null);
 			location.href = '/login';
 		}
 	}

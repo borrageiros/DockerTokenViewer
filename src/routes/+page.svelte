@@ -8,6 +8,14 @@
 	import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
 	import type { Column } from '$lib/components/Table.types';
 	import { currentLanguage, t, loadLanguageTranslations } from '$lib/stores/i18n';
+	import {
+		formatBytes,
+		formatNumber,
+		formatDate,
+		isToday,
+		isYesterday,
+		isThisWeek
+	} from '$lib/utils/common';
 
 	let repositories: RepositoriesResponse = {
 		count: 0,
@@ -37,7 +45,10 @@
 			repoEmpty: t('repositories.empty', language),
 			repoError: t('repositories.error', language),
 			refreshTooltip: t('table.refresh', language),
-			searchPlaceholder: t('table.search', language)
+			searchPlaceholder: t('table.search', language),
+			settingsTooltip: t('table.settings', language),
+			columnsLabel: t('table.columnsLabel', language),
+			emptyMessage: t('table.empty', language)
 		};
 
 		columns = [
@@ -52,68 +63,6 @@
 				sortable: true
 			}
 		];
-	}
-
-	function formatBytes(bytes: number | undefined | null): string {
-		if (!bytes || bytes === 0) return '0 B';
-		const k = 1024;
-		const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-		const i = Math.floor(Math.log(bytes) / Math.log(k));
-		return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-	}
-
-	function formatNumber(num: number | undefined | null): string {
-		if (num === undefined || num === null) return '0';
-		return num.toLocaleString();
-	}
-
-	function formatDate(dateString: string | undefined | null): string {
-		if (!dateString) return '-';
-		try {
-			const localeCode = $currentLanguage === 'es' ? 'es-ES' : 'en-US';
-			return new Date(dateString).toLocaleDateString(localeCode, {
-				year: 'numeric',
-				month: 'short',
-				day: 'numeric',
-				hour: '2-digit',
-				minute: '2-digit'
-			});
-		} catch (error) {
-			return '-';
-		}
-	}
-
-	function isToday(dateString: string | undefined | null): boolean {
-		if (!dateString) return false;
-		const today = new Date();
-		const date = new Date(dateString);
-
-		return (
-			date.getDate() === today.getDate() &&
-			date.getMonth() === today.getMonth() &&
-			date.getFullYear() === today.getFullYear()
-		);
-	}
-
-	function isYesterday(dateString: string | undefined | null): boolean {
-		if (!dateString) return false;
-		const yesterday = new Date();
-		yesterday.setDate(yesterday.getDate() - 1);
-		const date = new Date(dateString);
-		return (
-			date.getDate() === yesterday.getDate() &&
-			date.getMonth() === yesterday.getMonth() &&
-			date.getFullYear() === yesterday.getFullYear()
-		);
-	}
-
-	function isThisWeek(dateString: string | undefined | null): boolean {
-		if (!dateString) return false;
-		const today = new Date();
-		const date = new Date(dateString);
-		const diffTime = Math.abs(today.getTime() - date.getTime());
-		const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-		return diffDays <= 7 && !isToday(dateString) && !isYesterday(dateString);
 	}
 
 	function selectRepository(repoName: string) {
@@ -191,13 +140,15 @@
 				rows={repositories.results as any[]}
 				{isLoading}
 				isEmpty={repositories.results.length === 0}
-				emptyMessage={translations.repoEmpty}
+				emptyMessage={translations.emptyMessage}
 				onRowClick={handleRepositoryClick}
 				onRefresh={() => loadRepositories()}
 				refreshTooltip={translations.refreshTooltip}
 				onSearch={handleSearch}
 				searchValue={searchTerm}
 				searchPlaceholder={translations.searchPlaceholder}
+				settingsTooltip={translations.settingsTooltip}
+				columnsLabel={translations.columnsLabel}
 			>
 				<svelte:fragment slot="cell" let:row let:column let:value>
 					{#if column.key === 'name'}
@@ -218,7 +169,7 @@
 						</div>
 					{:else if column.key === 'last_updated'}
 						<div class="flex items-center text-sm text-gray-900 dark:text-white">
-							<span class="mr-2">{formatDate(value as string)}</span>
+							<span class="mr-2">{formatDate(value as string, $currentLanguage)}</span>
 							{#if isToday(value as string)}
 								<Badge text={translations.badgeToday} color="success" />
 							{:else if isYesterday(value as string)}

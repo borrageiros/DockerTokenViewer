@@ -5,6 +5,7 @@
 	import ThemeSwitcher from '$lib/components/ThemeSwitcher.svelte';
 	import LanguageSwitcher from '$lib/components/LanguageSwitcher.svelte';
 	import { currentLanguage, t, loadLanguageTranslations } from '$lib/stores/i18n';
+	import { setBaseRepository } from '$lib/stores/repository';
 
 	let token = '';
 	let repository = '';
@@ -59,6 +60,7 @@
 				return;
 			}
 
+			setBaseRepository(repository);
 			goto('/');
 		} catch (e) {
 			error = translations.errorConnection;
