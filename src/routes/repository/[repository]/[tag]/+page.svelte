@@ -6,6 +6,7 @@
 	import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
 	import { currentLanguage, t, loadLanguageTranslations } from '$lib/stores/i18n';
 	import { formatBytes, formatDate, copyPullCommand, getPullCommand } from '$lib/utils/common';
+	import { APP_NAME } from '$lib/consts';
 
 	let tagDetails: Tag | null = null;
 	let isLoading = false;
@@ -63,9 +64,8 @@
 		}
 	}
 
-	async function initializePage() {
+	async function initializeApp() {
 		try {
-			currentLanguage.init();
 			await loadTranslations($currentLanguage);
 			await loadTagDetails();
 		} catch (e) {
@@ -77,11 +77,11 @@
 	}
 
 	onMount(() => {
-		document.title = `Tag ${tag} - ${repository} - DockerTokenViewer`;
-		initializePage();
+		document.title = `${repository}/${tag} - ${APP_NAME}`;
+		initializeApp();
 	});
 
-	$: if (!isLoading && repository && tag) {
+	$: if ($currentLanguage) {
 		loadTranslations($currentLanguage);
 	}
 </script>

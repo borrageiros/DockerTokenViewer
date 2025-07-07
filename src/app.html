@@ -6,10 +6,24 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<script>
 			(() => {
-				const theme = localStorage.getItem('DTVTheme') || 'system';
+				let theme = 'system';
+				try {
+					const configStr = localStorage.getItem('DTVConfig');
+					if (configStr) {
+						theme = JSON.parse(configStr).theme || 'system';
+					} else {
+						const oldTheme = localStorage.getItem('DTVTheme');
+						if (oldTheme) {
+							theme = oldTheme;
+						}
+					}
+				} catch (e) {
+					// On error, default to system theme
+				}
+
 				const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 				const isDark = theme === 'dark' || (theme === 'system' && systemPrefersDark);
-				
+
 				if (isDark) {
 					document.documentElement.classList.add('dark');
 				} else {

@@ -1,8 +1,9 @@
 <script lang="ts">
+	import { config, type Language } from '$lib/stores/config';
 	import { currentLanguage } from '$lib/stores/i18n';
 
-	function setLanguage(language: 'es' | 'en') {
-		currentLanguage.set(language);
+	function setLanguage(language: Language) {
+		config.setLanguage(language);
 	}
 </script>
 

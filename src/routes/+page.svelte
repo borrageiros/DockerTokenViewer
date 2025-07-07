@@ -8,6 +8,7 @@
 	import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
 	import type { Column } from '$lib/components/Table.types';
 	import { currentLanguage, t, loadLanguageTranslations } from '$lib/stores/i18n';
+	import { APP_NAME } from '$lib/consts';
 	import {
 		formatBytes,
 		formatNumber,
@@ -16,6 +17,7 @@
 		isYesterday,
 		isThisWeek
 	} from '$lib/utils/common';
+	import { baseRepository } from '$lib/stores/repository';
 
 	let repositories: RepositoriesResponse = {
 		count: 0,
@@ -94,7 +96,6 @@
 
 	async function initializeApp() {
 		try {
-			currentLanguage.init();
 			await loadTranslations($currentLanguage);
 			await loadRepositories();
 		} catch (e) {
@@ -106,7 +107,7 @@
 	}
 
 	onMount(async () => {
-		document.title = 'DockerTokenViewer';
+		document.title = $baseRepository ? `${$baseRepository} - ${APP_NAME}` : APP_NAME;
 		await initializeApp();
 	});
 

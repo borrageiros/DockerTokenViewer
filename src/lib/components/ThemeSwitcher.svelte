@@ -1,8 +1,8 @@
 <script lang="ts">
-	import theme, { type Theme } from '$lib/stores/theme';
+	import { config, theme, type Theme } from '$lib/stores/config';
 
 	function setTheme(newTheme: Theme) {
-		theme.set(newTheme);
+		config.setTheme(newTheme);
 	}
 </script>
 

@@ -10,6 +10,7 @@
 	import type { Column } from '$lib/components/Table.types';
 	import { currentLanguage, t, loadLanguageTranslations } from '$lib/stores/i18n';
 	import { DEFAULT_PAGE_SIZE } from '$lib/consts';
+	import { APP_NAME } from '$lib/consts';
 	import {
 		formatBytes,
 		formatDate,
@@ -163,13 +164,12 @@
 		}
 	}
 
-	async function initializePage() {
+	async function initializeApp() {
 		try {
-			currentLanguage.init();
 			await loadTranslations($currentLanguage);
 			await loadTags();
 		} catch (e) {
-			console.error('Error initializing page:', e);
+			console.error('Error loading app:', e);
 			error = 'Error loading data';
 		} finally {
 			initialLoading = false;
@@ -177,8 +177,8 @@
 	}
 
 	onMount(() => {
-		document.title = `Tags - ${repository} - DockerTokenViewer`;
-		initializePage();
+		document.title = `${repository} - ${APP_NAME}`;
+		initializeApp();
 
 		// Close dropdown when clicking outside
 		function handleClickOutside(event: Event) {

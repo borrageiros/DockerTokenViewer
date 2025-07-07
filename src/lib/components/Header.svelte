@@ -4,6 +4,7 @@
 	import LogoutButton from './LogoutButton.svelte';
 	import { goto } from '$app/navigation';
 	import { currentLanguage, t } from '$lib/stores/i18n';
+	import { APP_NAME } from '$lib/consts';
 
 	let isMenuOpen = false;
 	let translations: Record<string, string> = {};
@@ -37,9 +38,9 @@
 					role="button"
 					tabindex="0"
 				>
-					<img src="/docker.svg" alt="DockerTokenViewer" class="h-8 w-8" />
+					<img src="/docker.svg" alt={APP_NAME} class="h-8 w-8" />
 					<h1 class="hidden text-xl font-bold text-gray-900 sm:block dark:text-white">
-						DockerTokenViewer
+						{APP_NAME}
 					</h1>
 				</div>
 			</div>

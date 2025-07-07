@@ -1,6 +1,6 @@
 <script lang="ts">
 	import '../app.css';
-	import theme, { type Theme } from '$lib/stores/theme';
+	import { theme, type Theme } from '$lib/stores/config';
 	import { setBaseRepository } from '$lib/stores/repository';
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';

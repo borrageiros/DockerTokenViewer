@@ -1,44 +1,11 @@
-import { writable } from 'svelte/store';
-import { browser } from '$app/environment';
-
-type Language = 'es' | 'en';
+import { derived } from 'svelte/store';
+import { config, type Language } from './config';
 
 interface Translations {
 	[key: string]: string | Translations;
 }
 
-const defaultLanguage: Language = 'es';
-
-function createI18nStore() {
-	const { subscribe, set } = writable<Language>(defaultLanguage);
-
-	return {
-		subscribe,
-		set: (language: Language) => {
-			if (browser) {
-				localStorage.setItem('DTVLanguage', language);
-			}
-			set(language);
-		},
-		init: () => {
-			if (browser) {
-				const stored = localStorage.getItem('DTVLanguage') as Language;
-				if (stored && (stored === 'es' || stored === 'en')) {
-					set(stored);
-				} else {
-					const browserLang = navigator.language.split('-')[0];
-					const language =
-						browserLang === 'es' || browserLang === 'en'
-							? (browserLang as Language)
-							: defaultLanguage;
-					set(language);
-				}
-			}
-		}
-	};
-}
-
-export const currentLanguage = createI18nStore();
+export const currentLanguage = derived(config, ($config) => $config.language);
 
 const translations: Record<Language, Translations> = {
 	es: {},

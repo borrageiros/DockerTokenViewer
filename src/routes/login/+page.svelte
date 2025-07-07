@@ -6,6 +6,7 @@
 	import LanguageSwitcher from '$lib/components/LanguageSwitcher.svelte';
 	import { currentLanguage, t, loadLanguageTranslations } from '$lib/stores/i18n';
 	import { setBaseRepository } from '$lib/stores/repository';
+	import { APP_NAME } from '$lib/consts';
 
 	let token = '';
 	let repository = '';
@@ -14,9 +15,9 @@
 	let error: string | null = null;
 	let translations: Record<string, string> = {};
 
-	$: {
+	onMount(() => {
 		loadTranslations($currentLanguage);
-	}
+	});
 
 	async function loadTranslations(language: 'es' | 'en') {
 		await loadLanguageTranslations(language);
@@ -35,7 +36,9 @@
 			step4: t('login.step4', language),
 			errorRequired: t('login.errors.required', language),
 			errorUnauthorized: t('login.errors.unauthorized', language),
-			errorConnection: t('login.errors.connection', language)
+			errorConnection: t('login.errors.connection', language),
+			loginButton: t('login.button', language),
+			loginSuccess: t('login.success', language)
 		};
 	}
 
@@ -69,11 +72,6 @@
 			isLoading = false;
 		}
 	}
-
-	onMount(() => {
-		currentLanguage.init();
-		document.title = 'Login - DockerTokenViewer';
-	});
 </script>
 
 <div
@@ -226,3 +224,7 @@
 		</div>
 	</div>
 </div>
+
+<svelte:head>
+	<title>Login - {APP_NAME}</title>
+</svelte:head>
