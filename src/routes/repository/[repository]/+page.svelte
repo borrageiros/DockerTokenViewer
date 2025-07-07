@@ -211,11 +211,11 @@
 		{:else}
 			<Breadcrumbs currentRepository={repository} />
 
-			<div class="mb-6">
+			<!-- <div class="mb-6">
 				<h2 class="text-2xl font-bold text-gray-900 dark:text-white">
 					{translations.tagsTitle}
 				</h2>
-			</div>
+			</div> -->
 
 			{#if error}
 				<div class="border-l-4 border-red-400 bg-red-50 p-4 dark:border-red-400 dark:bg-red-900/20">

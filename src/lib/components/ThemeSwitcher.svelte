@@ -9,7 +9,7 @@
 <div class="flex items-center space-x-2 rounded-lg bg-gray-200 p-1 dark:bg-gray-700">
 	<button
 		aria-label="Set light theme"
-		class="rounded-md p-2 transition-colors"
+		class="cursor-pointer rounded-md p-2 transition-colors"
 		class:bg-white={$theme === 'light'}
 		class:dark:bg-gray-900={$theme === 'light'}
 		class:text-blue-500={$theme === 'light'}
@@ -36,7 +36,7 @@
 	</button>
 	<button
 		aria-label="Set dark theme"
-		class="rounded-md p-2 transition-colors"
+		class="cursor-pointer rounded-md p-2 transition-colors"
 		class:bg-white={$theme === 'dark'}
 		class:dark:bg-gray-900={$theme === 'dark'}
 		class:text-blue-500={$theme === 'dark'}
@@ -63,7 +63,7 @@
 	</button>
 	<button
 		aria-label="Set system theme"
-		class="rounded-md p-2 transition-colors"
+		class="cursor-pointer rounded-md p-2 transition-colors"
 		class:bg-white={$theme === 'system'}
 		class:dark:bg-gray-900={$theme === 'system'}
 		class:text-blue-500={$theme === 'system'}

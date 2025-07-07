@@ -11,7 +11,7 @@
 	export let onRowClick: ((row: Row) => void) | null = null;
 	export let onScroll: ((event: Event) => void) | null = null;
 	export let isLoadingMore = false;
-	export let maxHeight = 'max-h-[32rem]';
+	export let maxHeight = 'h-[calc(100vh-15rem)]';
 	export let onRefresh: (() => void) | null = null;
 	export let refreshTooltip = 'Refresh';
 	export let onSearch: ((searchTerm: string) => void) | null = null;

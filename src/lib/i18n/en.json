@@ -43,7 +43,7 @@
     "badges": {
       "today": "TODAY",
       "yesterday": "YESTERDAY",
-      "lastDays": "7D",
+      "lastDays": "LAST DAYS",
       "lastDaysTooltip": "Updated in the last 7 days"
     },
     "noDescription": "No description",
