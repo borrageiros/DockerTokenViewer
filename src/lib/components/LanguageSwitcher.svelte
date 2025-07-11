@@ -7,11 +7,11 @@
 	}
 </script>
 
-<div class="flex cursor-pointer items-center space-x-2 rounded-lg bg-gray-200 p-1 dark:bg-gray-700">
+<div class="flex items-center rounded-lg bg-gray-200 p-1 dark:bg-gray-700">
 	<button
 		on:click={() => setLanguage('es')}
 		aria-label="Español"
-		class="flex cursor-pointer items-center justify-center rounded-md p-2 transition-colors"
+		class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md p-1 transition-colors"
 		class:bg-white={$currentLanguage === 'es'}
 		class:dark:bg-gray-900={$currentLanguage === 'es'}
 		class:text-blue-500={$currentLanguage === 'es'}
@@ -26,7 +26,7 @@
 	<button
 		on:click={() => setLanguage('en')}
 		aria-label="English"
-		class="flex cursor-pointer items-center justify-center rounded-md p-2 transition-colors"
+		class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md p-1 transition-colors"
 		class:bg-white={$currentLanguage === 'en'}
 		class:dark:bg-gray-900={$currentLanguage === 'en'}
 		class:text-blue-500={$currentLanguage === 'en'}

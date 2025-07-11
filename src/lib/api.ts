@@ -1,5 +1,7 @@
+import { get } from 'svelte/store';
 import { goto } from '$app/navigation';
 import { setBaseRepository } from '$lib/stores/repository';
+import { config } from '$lib/stores/config';
 
 const proxy = '/api/proxy';
 
@@ -20,6 +22,12 @@ async function fetchWithAuth<T>(
 	params?: Record<string, string | number | undefined>,
 	timeout = 10000
 ): Promise<T> {
+	const activeAccount = get(config.getActiveAccount());
+	if (!activeAccount) {
+		goto('/login');
+		throw new Error('No active account found');
+	}
+
 	const controller = new AbortController();
 	const timer = setTimeout(() => controller.abort(), timeout);
 
@@ -27,7 +35,8 @@ async function fetchWithAuth<T>(
 
 	const response = await fetch(url, {
 		headers: {
-			Accept: 'application/json'
+			Accept: 'application/json',
+			Account: activeAccount.data
 		},
 		signal: controller.signal
 	});
@@ -178,6 +187,16 @@ export async function getTagDetails(repo: string, tag: string): Promise<Tag> {
 	return data;
 }
 
+export async function deleteAuthCookie() {
+	const data = await fetch('/api/delete-auth-cookie', {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json'
+		}
+	});
+	return data;
+}
+
 export async function logout() {
 	const data = await fetch('/api/logout', {
 		method: 'POST',
@@ -189,13 +208,13 @@ export async function logout() {
 	return data;
 }
 
-export async function login(token: string, repository: string, remember: boolean = false) {
+export async function login(token: string, organization: string, user: string) {
 	const data = await fetch('/api/login', {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json'
 		},
-		body: JSON.stringify({ token, repository, remember })
+		body: JSON.stringify({ token, organization, user })
 	});
 	return data;
 }

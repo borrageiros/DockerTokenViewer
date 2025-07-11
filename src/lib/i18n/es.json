@@ -2,9 +2,9 @@
   "login": {
     "title": "Docker Token Viewer",
     "subtitle": "Inicia sesión para acceder a tus repositorios",
-    "repository": "Usuario u organización",
+    "organization": "Organización / Espacio de nombres",
+    "user": "Usuario de Docker Hub",
     "token": "Token de Docker Hub",
-    "remember": "Recordar sesión",
     "submit": "Iniciar sesión",
     "howToGetToken": "¿Cómo obtener un token?",
     "step1": "Ve a",
@@ -16,7 +16,14 @@
       "required": "Por favor, completa todos los campos",
       "unauthorized": "Credenciales inválidas o sin permisos",
       "connection": "Error de conexión. Inténtalo de nuevo."
-    }
+    },
+    "backToDashboard": "Volver al dashboard"
+  },
+  "accountSwitcher": {
+    "savedAccounts": "Cuentas guardadas",
+    "deleteAccountTitle": "Eliminar cuenta",
+    "noAccounts": "No hay cuentas guardadas",
+    "addAccount": "Agregar cuenta"
   },
   "header": {
     "language": "Idioma",

@@ -5,28 +5,28 @@
 	import ThemeSwitcher from '$lib/components/ThemeSwitcher.svelte';
 	import LanguageSwitcher from '$lib/components/LanguageSwitcher.svelte';
 	import { currentLanguage, t, loadLanguageTranslations } from '$lib/stores/i18n';
-	import { setBaseRepository } from '$lib/stores/repository';
 	import { APP_NAME } from '$lib/consts';
+	import { config } from '$lib/stores/config';
 
 	let token = '';
-	let repository = '';
-	let remember = false;
+	let organization = '';
+	let user = '';
 	let isLoading = false;
 	let error: string | null = null;
 	let translations: Record<string, string> = {};
 
-	onMount(() => {
-		loadTranslations($currentLanguage);
-	});
+	$: hasAccounts = $config.accounts.length > 0;
+
+	$: loadTranslations($currentLanguage);
 
 	async function loadTranslations(language: 'es' | 'en') {
 		await loadLanguageTranslations(language);
 		translations = {
 			title: t('login.title', language),
 			subtitle: t('login.subtitle', language),
-			repository: t('login.repository', language),
+			organization: t('login.organization', language),
+			user: t('login.user', language),
 			token: t('login.token', language),
-			remember: t('login.remember', language),
 			submit: t('login.submit', language),
 			howToGetToken: t('login.howToGetToken', language),
 			step1: t('login.step1', language),
@@ -38,12 +38,17 @@
 			errorUnauthorized: t('login.errors.unauthorized', language),
 			errorConnection: t('login.errors.connection', language),
 			loginButton: t('login.button', language),
-			loginSuccess: t('login.success', language)
+			loginSuccess: t('login.success', language),
+			backToDashboard: t('login.backToDashboard', language)
 		};
 	}
 
+	function handleBackToDashboard() {
+		goto('/');
+	}
+
 	async function handleSubmit() {
-		if (!token || !repository) {
+		if (!token || !organization || !user) {
 			error = translations.errorRequired;
 			return;
 		}
@@ -52,7 +57,8 @@
 		error = null;
 
 		try {
-			const response = await login(token, repository, remember);
+			const response = await login(token, organization, user);
+			const data = await response.json();
 
 			if (!response.ok) {
 				if (response.status === 401) {
@@ -63,7 +69,7 @@
 				return;
 			}
 
-			setBaseRepository(repository);
+			config.addAccount(organization, data.data);
 			goto('/');
 		} catch (e) {
 			error = translations.errorConnection;
@@ -90,18 +96,55 @@
 				{translations.subtitle}
 			</p>
 		</div>
+
+		{#if hasAccounts}
+			<div class="flex justify-center">
+				<button
+					type="button"
+					on:click={handleBackToDashboard}
+					class="inline-flex items-center rounded-md border border-transparent bg-indigo-100 px-4 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-200 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none dark:bg-indigo-900/30 dark:text-indigo-300 dark:hover:bg-indigo-900/50"
+				>
+					<svg
+						class="mr-2 -ml-1 h-5 w-5"
+						xmlns="http://www.w3.org/2000/svg"
+						viewBox="0 0 20 20"
+						fill="currentColor"
+					>
+						<path
+							fill-rule="evenodd"
+							d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z"
+							clip-rule="evenodd"
+						/>
+					</svg>
+					{translations.backToDashboard}
+				</button>
+			</div>
+		{/if}
+
 		<form class="mt-8 space-y-6" on:submit|preventDefault={handleSubmit}>
 			<div class="-space-y-px rounded-md shadow-sm">
 				<div>
-					<label for="repository" class="sr-only">{translations.repository}</label>
+					<label for="organization" class="sr-only">{translations.organization}</label>
 					<input
-						id="repository"
-						name="repository"
+						id="organization"
+						name="organization"
 						type="text"
 						required
-						bind:value={repository}
+						bind:value={organization}
 						class="relative block w-full appearance-none rounded-none rounded-t-md border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none sm:text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
-						placeholder={translations.repository}
+						placeholder={translations.organization}
+					/>
+				</div>
+				<div>
+					<label for="user" class="sr-only">{translations.user}</label>
+					<input
+						id="user"
+						name="user"
+						type="text"
+						required
+						bind:value={user}
+						class="relative block w-full appearance-none rounded-none border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none sm:text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
+						placeholder={translations.user}
 					/>
 				</div>
 				<div>
@@ -115,21 +158,6 @@
 						class="relative block w-full appearance-none rounded-none rounded-b-md border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none sm:text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
 						placeholder={translations.token}
 					/>
-				</div>
-			</div>
-
-			<div class="flex items-center justify-between">
-				<div class="flex items-center">
-					<input
-						id="remember"
-						name="remember"
-						type="checkbox"
-						bind:checked={remember}
-						class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700"
-					/>
-					<label for="remember" class="ml-2 block text-sm text-gray-900 dark:text-gray-300">
-						{translations.remember}
-					</label>
 				</div>
 			</div>
 

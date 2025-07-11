@@ -1,43 +1,46 @@
 import type { RequestHandler } from '@sveltejs/kit';
 import { DOCKER_HUB_URL } from '$lib/consts';
+import { decrypt } from '$lib/utils/crypto';
+import { type AccountData } from '$lib/stores/config';
+import { getDockerHubToken, isTokenExpired } from '$lib/utils/common';
 
 export const GET: RequestHandler = async ({ params, request, url, cookies }) => {
-	const tokenCookie = cookies.get('DTVAuth');
-	const repositoryCookie = cookies.get('DTVRepository');
-
-	if (!tokenCookie || !repositoryCookie) {
-		cookies.delete('DTVAuth', { path: '/' });
-		cookies.delete('DTVRepository', { path: '/' });
-		return new Response('Unauthorized', { status: 401 });
+	const tokenFromCookie = cookies.get('DTVAuth');
+	let accessToken = null;
+	const encryptedAccountHeader = request.headers.get('Account');
+	if (!encryptedAccountHeader) {
+		return new Response('Account is missing', { status: 400 });
 	}
-
-	let token: string;
-	let repository: string;
-	try {
-		token = JSON.parse(tokenCookie);
-		repository = JSON.parse(repositoryCookie);
-	} catch {
-		cookies.delete('DTVAuth', { path: '/' });
-		cookies.delete('DTVRepository', { path: '/' });
-		return new Response('Unauthorized', { status: 401 });
-	}
+	const account = decrypt(encryptedAccountHeader) as AccountData;
 
 	if (!params.proxyPath) {
 		return new Response('Proxy path is missing', { status: 400 });
 	}
 
-	const pathParts = params.proxyPath.split('/');
-
-	if (pathParts[0] !== 'v2' || pathParts[1] !== 'repositories') {
-		return new Response('Invalid proxy path. Must start with v2/repositories', { status: 400 });
+	if (!tokenFromCookie || isTokenExpired(tokenFromCookie)) {
+		const newAccessToken = await getDockerHubToken(account.user, account.token);
+		const tokenToStore = newAccessToken.access_token;
+		if (tokenToStore) {
+			accessToken = tokenToStore;
+			cookies.set('DTVAuth', JSON.stringify(accessToken), {
+				path: '/',
+				httpOnly: true,
+				secure: true,
+				sameSite: 'strict' as const
+			});
+		}
+	} else {
+		accessToken = JSON.parse(tokenFromCookie);
 	}
 
+	const pathParts = params.proxyPath.split('/');
+
 	const remainingPath = pathParts.slice(2).join('/');
-	const finalPath = `v2/repositories/${repository}${remainingPath ? `/${remainingPath}` : ''}`;
+	const finalPath = `v2/repositories/${account.organization}${remainingPath ? `/${remainingPath}` : ''}`;
 	const targetUrl = `${DOCKER_HUB_URL}/${finalPath}${url.search}`;
 
 	const headersToForward = new Headers();
-	headersToForward.set('Authorization', `JWT ${token}`);
+	headersToForward.set('Authorization', `Bearer ${accessToken}`);
 
 	const acceptHeader = request.headers.get('accept');
 	if (acceptHeader) {

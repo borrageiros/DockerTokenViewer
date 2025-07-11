@@ -1,6 +1,7 @@
 import type { Writable } from 'svelte/store';
 import { get } from 'svelte/store';
-import { baseRepository } from '$lib/stores/repository';
+import { config } from '$lib/stores/config';
+import { DOCKER_HUB_URL } from '$lib/consts';
 
 export function formatBytes(bytes: number | undefined | null): string {
 	if (!bytes || bytes === 0) return '0 B';
@@ -85,7 +86,7 @@ export function copyImageTag(imageName: string, tagName: string): Promise<void> 
 }
 
 export function copyRepoImageTag(imageName: string, tagName: string): Promise<void> {
-	const repo = get(baseRepository);
+	const repo = get(config.getActiveAccount())?.organization;
 	return copyToClipboard(`${repo}/${imageName}:${tagName}`);
 }
 
@@ -94,7 +95,7 @@ export function copyPullCommand(imageName: string, tagName: string): Promise<voi
 }
 
 export function getPullCommand(imageName: string, tagName: string): string {
-	const repo = get(baseRepository);
+	const repo = get(config.getActiveAccount())?.organization;
 	return `docker pull ${repo}/${imageName}:${tagName}`;
 }
 
@@ -143,4 +144,28 @@ export function getLatestFromResults<T extends { last_updated: string }>(results
 		const currentDate = new Date(current.last_updated);
 		return currentDate > latestDate ? current : latest;
 	});
+}
+
+export function isTokenExpired(token: string): boolean {
+	try {
+		const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+		const expiry = payload.exp * 1000;
+		return Date.now() > expiry;
+	} catch {
+		return true;
+	}
+}
+
+export async function getDockerHubToken(user: string, token: string) {
+	const data = await fetch(`${DOCKER_HUB_URL}/v2/auth/token`, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify({
+			identifier: user,
+			secret: token
+		})
+	});
+	return data.json();
 }

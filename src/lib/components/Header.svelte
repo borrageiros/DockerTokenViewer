@@ -1,7 +1,7 @@
 <script lang="ts">
+	import AccountSwitcher from './AccountSwitcher.svelte';
 	import ThemeSwitcher from './ThemeSwitcher.svelte';
 	import LanguageSwitcher from './LanguageSwitcher.svelte';
-	import LogoutButton from './LogoutButton.svelte';
 	import { goto } from '$app/navigation';
 	import { currentLanguage, t } from '$lib/stores/i18n';
 	import { APP_NAME } from '$lib/consts';
@@ -49,7 +49,7 @@
 			<div class="hidden items-center space-x-4 md:flex">
 				<LanguageSwitcher />
 				<ThemeSwitcher />
-				<LogoutButton />
+				<AccountSwitcher />
 			</div>
 
 			<!-- Mobile menu button -->
@@ -99,14 +99,6 @@
 						>
 						<div on:click={closeMenu} on:keydown={() => {}} role="button" tabindex="0">
 							<ThemeSwitcher />
-						</div>
-					</div>
-					<div class="flex items-center justify-between">
-						<span class="text-sm font-medium text-gray-700 dark:text-gray-300"
-							>{translations.session}</span
-						>
-						<div on:click={closeMenu} on:keydown={() => {}} role="button" tabindex="0">
-							<LogoutButton />
 						</div>
 					</div>
 				</div>

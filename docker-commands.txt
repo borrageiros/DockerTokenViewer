@@ -8,6 +8,7 @@ docker push borrageiros/docker-token-viewer:arm64 && \
 docker run -d \
   -p 1237:3000 \
   --name dockertokenviewer \
+  -e PRIVATE_SECRET_KEY=your_secret_key_here \
   --restart on-failure \
   borrageiros/docker-token-viewer:arm64
 
@@ -21,5 +22,6 @@ docker push borrageiros/docker-token-viewer:latest && \
 docker run -d \
   -p 1237:3000 \
   --name dockertokenviewer \
+  -e PRIVATE_SECRET_KEY=your_secret_key_here \
   --restart on-failure \
   borrageiros/docker-token-viewer:latest
