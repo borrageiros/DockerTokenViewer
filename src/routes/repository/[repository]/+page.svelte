@@ -21,7 +21,8 @@
 		copyImageTag,
 		copyRepoImageTag,
 		copyPullCommand,
-		getLatestFromResults
+		getLatestFromResults,
+		formatNumber
 	} from '$lib/utils/common';
 
 	let tags: Tag[] = [];
@@ -50,6 +51,17 @@
 			tagsTablePushedBy: t('tags.table.pushedBy', language),
 			tagsTableLastUpdate: t('tags.table.lastUpdate', language),
 			tagsTableCopy: t('tags.table.copy', language),
+			tagsTableCreator: t('tags.table.creator', language),
+			tagsTableId: t('tags.table.id', language),
+			tagsTableLastUpdater: t('tags.table.lastUpdater', language),
+			tagsTableRepository: t('tags.table.repository', language),
+			tagsTableV2: t('tags.table.v2', language),
+			tagsTableTagStatus: t('tags.table.tagStatus', language),
+			tagsTableTagLastPulled: t('tags.table.tagLastPulled', language),
+			tagsTableTagLastPushed: t('tags.table.tagLastPushed', language),
+			tagsTableMediaType: t('tags.table.mediaType', language),
+			tagsTableContentType: t('tags.table.contentType', language),
+			tagsTableDigest: t('tags.table.digest', language),
 			copyTooltip: t('tags.copyTooltip', language),
 			copied: t('tags.copied', language),
 			tagsEmpty: t('tags.empty', language),
@@ -71,11 +83,63 @@
 		};
 
 		columns = [
-			{ key: 'name', label: translations.tagsTableName, sortable: true },
-			{ key: 'full_size', label: translations.tagsTableSize, sortable: true },
-			{ key: 'last_updater_username', label: translations.tagsTablePushedBy, sortable: true },
-			{ key: 'last_updated', label: translations.tagsTableLastUpdate, sortable: true },
-			{ key: 'copy', label: translations.tagsTableCopy, width: 'w-24', sortable: false }
+			{ key: 'name', label: translations.tagsTableName, sortable: true, visible: true },
+			{ key: 'full_size', label: translations.tagsTableSize, sortable: true, visible: true },
+			{
+				key: 'last_updater_username',
+				label: translations.tagsTablePushedBy,
+				sortable: true,
+				visible: true
+			},
+			{
+				key: 'last_updated',
+				label: translations.tagsTableLastUpdate,
+				sortable: true,
+				visible: true
+			},
+			{
+				key: 'copy',
+				label: translations.tagsTableCopy,
+				width: 'w-24',
+				sortable: false,
+				visible: true
+			},
+			{ key: 'creator', label: translations.tagsTableCreator, sortable: true, visible: false },
+			{ key: 'id', label: translations.tagsTableId, sortable: true, visible: false },
+			{
+				key: 'last_updater',
+				label: translations.tagsTableLastUpdater,
+				sortable: true,
+				visible: false
+			},
+			{
+				key: 'repository',
+				label: translations.tagsTableRepository,
+				sortable: true,
+				visible: false
+			},
+			{ key: 'v2', label: translations.tagsTableV2, sortable: true, visible: false },
+			{ key: 'tag_status', label: translations.tagsTableTagStatus, sortable: true, visible: false },
+			{
+				key: 'tag_last_pulled',
+				label: translations.tagsTableTagLastPulled,
+				sortable: true,
+				visible: false
+			},
+			{
+				key: 'tag_last_pushed',
+				label: translations.tagsTableTagLastPushed,
+				sortable: true,
+				visible: false
+			},
+			{ key: 'media_type', label: translations.tagsTableMediaType, sortable: true, visible: false },
+			{
+				key: 'content_type',
+				label: translations.tagsTableContentType,
+				sortable: true,
+				visible: false
+			},
+			{ key: 'digest', label: translations.tagsTableDigest, sortable: true, visible: false }
 		];
 	}
 
@@ -262,20 +326,26 @@
 						<div class="text-sm text-gray-900 dark:text-white">
 							{value || '-'}
 						</div>
-					{:else if column.key === 'last_updated'}
+					{:else if column.key === 'last_updated' || column.key === 'tag_last_pulled' || column.key === 'tag_last_pushed'}
 						<div class="flex items-center text-sm text-gray-900 dark:text-white">
 							<span class="mr-2">{formatDate(value as string, $currentLanguage)}</span>
-							{#if isToday(value as string)}
-								<Badge text={translations.badgeToday} color="success" />
-							{:else if isYesterday(value as string)}
-								<Badge text={translations.badgeYesterday} color="warning" />
-							{:else if isThisWeek(value as string)}
-								<Badge
-									text={translations.badgeLastDays}
-									color="danger"
-									tooltipText={translations.badgeLastDaysTooltip}
-								/>
+							{#if column.key === 'last_updated'}
+								{#if isToday(value as string)}
+									<Badge text={translations.badgeToday} color="success" />
+								{:else if isYesterday(value as string)}
+									<Badge text={translations.badgeYesterday} color="warning" />
+								{:else if isThisWeek(value as string)}
+									<Badge
+										text={translations.badgeLastDays}
+										color="danger"
+										tooltipText={translations.badgeLastDaysTooltip}
+									/>
+								{/if}
 							{/if}
+						</div>
+					{:else if column.key === 'v2'}
+						<div class="text-sm text-gray-900 dark:text-white">
+							{value ? 'Yes' : 'No'}
 						</div>
 					{:else if column.key === 'copy'}
 						<div class="dropdown-container relative">
@@ -336,6 +406,14 @@
 									</button>
 								</div>
 							{/if}
+						</div>
+					{:else if typeof value === 'number'}
+						<div class="text-sm text-gray-900 dark:text-white">
+							{formatNumber(value)}
+						</div>
+					{:else}
+						<div class="text-sm text-gray-900 dark:text-white">
+							{value || '-'}
 						</div>
 					{/if}
 				</svelte:fragment>

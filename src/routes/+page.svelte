@@ -39,6 +39,18 @@
 			repoTableDownloads: t('repositories.table.downloads', language),
 			repoTableSize: t('repositories.table.size', language),
 			repoTableLastUpdate: t('repositories.table.lastUpdate', language),
+			repoTableNamespace: t('repositories.table.namespace', language),
+			repoTableRepositoryType: t('repositories.table.repositoryType', language),
+			repoTableStatus: t('repositories.table.status', language),
+			repoTableStatusDescription: t('repositories.table.statusDescription', language),
+			repoTableIsPrivate: t('repositories.table.isPrivate', language),
+			repoTableStarCount: t('repositories.table.starCount', language),
+			repoTableLastModified: t('repositories.table.lastModified', language),
+			repoTableDateRegistered: t('repositories.table.dateRegistered', language),
+			repoTableAffiliation: t('repositories.table.affiliation', language),
+			repoTableMediaTypes: t('repositories.table.mediaTypes', language),
+			repoTableContentTypes: t('repositories.table.contentTypes', language),
+			repoTableCategories: t('repositories.table.categories', language),
 			badgeToday: t('repositories.badges.today', language),
 			badgeYesterday: t('repositories.badges.yesterday', language),
 			badgeLastDays: t('repositories.badges.lastDays', language),
@@ -54,16 +66,69 @@
 		};
 
 		columns = [
-			{ key: 'name', label: translations.repoTableName, sortable: true },
-			{ key: 'description', label: translations.repoTableDescription, sortable: true },
-			{ key: 'pull_count', label: translations.repoTableDownloads, sortable: true },
-			{ key: 'storage_size', label: translations.repoTableSize, sortable: true },
+			{ key: 'name', label: translations.repoTableName, sortable: true, visible: true },
+			{
+				key: 'description',
+				label: translations.repoTableDescription,
+				sortable: true,
+				visible: true
+			},
+			{ key: 'pull_count', label: translations.repoTableDownloads, sortable: true, visible: true },
+			{ key: 'storage_size', label: translations.repoTableSize, sortable: true, visible: true },
 			{
 				key: 'last_updated',
 				label: translations.repoTableLastUpdate,
 				width: 'w-48',
-				sortable: true
-			}
+				sortable: true,
+				visible: true
+			},
+			{ key: 'namespace', label: translations.repoTableNamespace, sortable: true, visible: false },
+			{
+				key: 'repository_type',
+				label: translations.repoTableRepositoryType,
+				sortable: true,
+				visible: false
+			},
+			{ key: 'status', label: translations.repoTableStatus, sortable: true, visible: false },
+			{
+				key: 'status_description',
+				label: translations.repoTableStatusDescription,
+				sortable: true,
+				visible: false
+			},
+			{ key: 'is_private', label: translations.repoTableIsPrivate, sortable: true, visible: false },
+			{ key: 'star_count', label: translations.repoTableStarCount, sortable: true, visible: false },
+			{
+				key: 'last_modified',
+				label: translations.repoTableLastModified,
+				sortable: true,
+				visible: false
+			},
+			{
+				key: 'date_registered',
+				label: translations.repoTableDateRegistered,
+				sortable: true,
+				visible: false
+			},
+			{
+				key: 'affiliation',
+				label: translations.repoTableAffiliation,
+				sortable: true,
+				visible: false
+			},
+			{
+				key: 'media_types',
+				label: translations.repoTableMediaTypes,
+				sortable: true,
+				visible: false
+			},
+			{
+				key: 'content_types',
+				label: translations.repoTableContentTypes,
+				sortable: true,
+				visible: false
+			},
+			{ key: 'categories', label: translations.repoTableCategories, sortable: true, visible: false }
 		];
 	}
 
@@ -164,24 +229,46 @@
 						<div class="text-sm text-gray-900 dark:text-white">
 							{formatNumber(value as number)}
 						</div>
+					{:else if column.key === 'star_count'}
+						<div class="text-sm text-gray-900 dark:text-white">
+							{formatNumber(value as number)}
+						</div>
 					{:else if column.key === 'storage_size'}
 						<div class="text-sm text-gray-900 dark:text-white">
 							{formatBytes(value as number)}
 						</div>
-					{:else if column.key === 'last_updated'}
+					{:else if column.key === 'last_updated' || column.key === 'last_modified' || column.key === 'date_registered'}
 						<div class="flex items-center text-sm text-gray-900 dark:text-white">
 							<span class="mr-2">{formatDate(value as string, $currentLanguage)}</span>
-							{#if isToday(value as string)}
-								<Badge text={translations.badgeToday} color="success" />
-							{:else if isYesterday(value as string)}
-								<Badge text={translations.badgeYesterday} color="warning" />
-							{:else if isThisWeek(value as string)}
-								<Badge
-									text={translations.badgeLastDays}
-									color="danger"
-									tooltipText={translations.badgeLastDaysTooltip}
-								/>
+							{#if column.key === 'last_updated'}
+								{#if isToday(value as string)}
+									<Badge text={translations.badgeToday} color="success" />
+								{:else if isYesterday(value as string)}
+									<Badge text={translations.badgeYesterday} color="warning" />
+								{:else if isThisWeek(value as string)}
+									<Badge
+										text={translations.badgeLastDays}
+										color="danger"
+										tooltipText={translations.badgeLastDaysTooltip}
+									/>
+								{/if}
 							{/if}
+						</div>
+					{:else if column.key === 'is_private'}
+						<div class="text-sm text-gray-900 dark:text-white">
+							{value ? 'Yes' : 'No'}
+						</div>
+					{:else if Array.isArray(value)}
+						<div class="text-sm text-gray-900 dark:text-white">
+							{value.join(', ') || '-'}
+						</div>
+					{:else if typeof value === 'number'}
+						<div class="text-sm text-gray-900 dark:text-white">
+							{formatNumber(value)}
+						</div>
+					{:else}
+						<div class="text-sm text-gray-900 dark:text-white">
+							{value || '-'}
 						</div>
 					{/if}
 				</svelte:fragment>

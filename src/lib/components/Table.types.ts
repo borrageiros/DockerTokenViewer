@@ -1,11 +1,10 @@
 export interface Column {
 	key: string;
 	label: string;
+	sortable?: boolean;
 	width?: string;
 	align?: 'left' | 'center' | 'right';
-	sortable?: boolean;
+	visible?: boolean;
 }
 
-export interface Row {
-	[key: string]: unknown;
-}
+export type Row = Record<string, unknown>;

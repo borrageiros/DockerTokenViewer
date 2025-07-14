@@ -130,6 +130,7 @@
 						name="organization"
 						type="text"
 						required
+						autocomplete="organization"
 						bind:value={organization}
 						class="relative block w-full appearance-none rounded-none rounded-t-md border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none sm:text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
 						placeholder={translations.organization}
@@ -142,6 +143,7 @@
 						name="user"
 						type="text"
 						required
+						autocomplete="username"
 						bind:value={user}
 						class="relative block w-full appearance-none rounded-none border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none sm:text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
 						placeholder={translations.user}
@@ -154,6 +156,7 @@
 						name="token"
 						type="password"
 						required
+						autocomplete="current-password"
 						bind:value={token}
 						class="relative block w-full appearance-none rounded-none rounded-b-md border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none sm:text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
 						placeholder={translations.token}

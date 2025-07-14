@@ -21,7 +21,7 @@
 	export let columnsLabel = 'Visible columns';
 
 	const dispatch = createEventDispatcher();
-	let searchTimeout: number;
+	let searchTimeout: ReturnType<typeof setTimeout>;
 	let isSettingsOpen = false;
 	let visibleColumns: Record<string, boolean> = {};
 
@@ -118,7 +118,7 @@
 
 		columns.forEach((column) => {
 			if (visibleColumns[column.key] === undefined) {
-				newVisibleColumns[column.key] = true;
+				newVisibleColumns[column.key] = column.visible !== false;
 				hasChanged = true;
 			} else {
 				newVisibleColumns[column.key] = visibleColumns[column.key];

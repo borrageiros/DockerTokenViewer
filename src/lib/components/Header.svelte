@@ -3,14 +3,16 @@
 	import ThemeSwitcher from './ThemeSwitcher.svelte';
 	import LanguageSwitcher from './LanguageSwitcher.svelte';
 	import { goto } from '$app/navigation';
-	import { currentLanguage, t } from '$lib/stores/i18n';
+	import { currentLanguage, t, loadLanguageTranslations } from '$lib/stores/i18n';
 	import { APP_NAME } from '$lib/consts';
 
 	let isMenuOpen = false;
 	let translations: Record<string, string> = {};
 
-	$: {
-		const language = $currentLanguage;
+	$: loadTranslations($currentLanguage);
+
+	async function loadTranslations(language: 'es' | 'en') {
+		await loadLanguageTranslations(language);
 		translations = {
 			language: t('header.language', language),
 			theme: t('header.theme', language),
@@ -99,6 +101,14 @@
 						>
 						<div on:click={closeMenu} on:keydown={() => {}} role="button" tabindex="0">
 							<ThemeSwitcher />
+						</div>
+					</div>
+					<div class="flex items-center justify-between">
+						<span class="text-sm font-medium text-gray-700 dark:text-gray-300"
+							>{translations.session}</span
+						>
+						<div on:click={closeMenu} on:keydown={() => {}} role="button" tabindex="0">
+							<AccountSwitcher />
 						</div>
 					</div>
 				</div>
