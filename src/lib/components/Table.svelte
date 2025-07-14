@@ -19,11 +19,11 @@
 	export let searchPlaceholder = 'Search...';
 	export let settingsTooltip = 'Configure columns';
 	export let columnsLabel = 'Visible columns';
+	export let visibleColumns: Record<string, boolean> = {};
 
 	const dispatch = createEventDispatcher();
 	let searchTimeout: ReturnType<typeof setTimeout>;
 	let isSettingsOpen = false;
-	let visibleColumns: Record<string, boolean> = {};
 
 	let sortColumn: string | null = null;
 	let sortDirection: 'asc' | 'desc' = 'asc';
@@ -160,10 +160,6 @@
 	}
 
 	// Reactive statements
-	$: if (columns.length > 0 && Object.keys(visibleColumns).length === 0) {
-		initializeVisibleColumns();
-	}
-
 	$: filteredColumns = columns.filter((column) => visibleColumns[column.key]);
 
 	$: sortedRows = sortRows(rows, sortColumn, sortDirection);

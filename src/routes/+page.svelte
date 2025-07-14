@@ -18,6 +18,7 @@
 		isThisWeek
 	} from '$lib/utils/common';
 	import { baseRepository } from '$lib/stores/repository';
+	import { config } from '$lib/stores/config';
 
 	let repositories: RepositoriesResponse = {
 		count: 0,
@@ -29,6 +30,7 @@
 	let columns: Column[] = [];
 	let searchTerm = '';
 	let initialLoading = true;
+	let visibleColumns: Record<string, boolean> = {};
 
 	async function loadTranslations(language: 'es' | 'en') {
 		await loadLanguageTranslations(language);
@@ -130,6 +132,14 @@
 			},
 			{ key: 'categories', label: translations.repoTableCategories, sortable: true, visible: false }
 		];
+
+		const savedSettings = $config.tableSettings.repositories;
+		const initialVisibleColumns: Record<string, boolean> = {};
+		columns.forEach((col) => {
+			initialVisibleColumns[col.key] =
+				savedSettings[col.key] !== undefined ? savedSettings[col.key] : col.visible !== false;
+		});
+		visibleColumns = initialVisibleColumns;
 	}
 
 	function selectRepository(repoName: string) {
@@ -179,6 +189,10 @@
 	$: if (!isLoading) {
 		loadTranslations($currentLanguage);
 	}
+
+	$: if (Object.keys(visibleColumns).length > 0) {
+		config.setTableSettings('repositories', visibleColumns);
+	}
 </script>
 
 <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -215,6 +229,7 @@
 				searchPlaceholder={translations.searchPlaceholder}
 				settingsTooltip={translations.settingsTooltip}
 				columnsLabel={translations.columnsLabel}
+				bind:visibleColumns
 			>
 				<svelte:fragment slot="cell" let:row let:column let:value>
 					{#if column.key === 'name'}

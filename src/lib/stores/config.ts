@@ -18,15 +18,26 @@ export interface AccountData {
 	organization: string;
 }
 
+export interface TableSettings {
+	repositories: Record<string, boolean>;
+	tags: Record<string, boolean>;
+}
+
 export interface Config {
 	theme: Theme;
 	language: Language;
 	accounts: Account[];
+	tableSettings: TableSettings;
 }
 
 function getDefaultConfig(): Config {
 	if (!browser) {
-		return { theme: 'system', language: 'es', accounts: [] };
+		return {
+			theme: 'system',
+			language: 'es',
+			accounts: [],
+			tableSettings: { repositories: {}, tags: {} }
+		};
 	}
 
 	const browserLang = navigator.language.split('-')[0];
@@ -34,24 +45,35 @@ function getDefaultConfig(): Config {
 	return {
 		theme: 'system',
 		language,
-		accounts: []
+		accounts: [],
+		tableSettings: {
+			repositories: {},
+			tags: {}
+		}
 	};
 }
 
 function getInitialConfig(): Config {
 	if (!browser) return getDefaultConfig();
+	const defaultConfig = getDefaultConfig();
 
 	try {
 		const stored = localStorage.getItem(STORAGE_KEY);
 		if (stored) {
 			const parsed = JSON.parse(stored);
-			return { ...getDefaultConfig(), ...parsed };
+			if (parsed.tableSettings) {
+				parsed.tableSettings = {
+					...defaultConfig.tableSettings,
+					...parsed.tableSettings
+				};
+			}
+			return { ...defaultConfig, ...parsed };
 		}
 	} catch (error) {
 		console.error('Error loading config:', error);
 	}
 
-	return getDefaultConfig();
+	return defaultConfig;
 }
 
 function saveToStorage(config: Config) {
@@ -85,6 +107,19 @@ function createConfigStore() {
 		setLanguage: (language: Language) => {
 			update((config) => {
 				const newConfig = { ...config, language };
+				saveToStorage(newConfig);
+				return newConfig;
+			});
+		},
+		setTableSettings: (table: keyof TableSettings, settings: Record<string, boolean>) => {
+			update((config) => {
+				const newConfig = {
+					...config,
+					tableSettings: {
+						...config.tableSettings,
+						[table]: settings
+					}
+				};
 				saveToStorage(newConfig);
 				return newConfig;
 			});

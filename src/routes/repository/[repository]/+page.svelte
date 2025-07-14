@@ -24,6 +24,7 @@
 		getLatestFromResults,
 		formatNumber
 	} from '$lib/utils/common';
+	import { config } from '$lib/stores/config';
 
 	let tags: Tag[] = [];
 	let isLoading = false;
@@ -38,6 +39,7 @@
 	let searchTerm = '';
 	let initialLoading = true;
 	let openDropdown: string | null = null;
+	let visibleColumns: Record<string, boolean> = {};
 
 	$: repository = $page.params.repository;
 
@@ -141,6 +143,14 @@
 			},
 			{ key: 'digest', label: translations.tagsTableDigest, sortable: true, visible: false }
 		];
+
+		const savedSettings = $config.tableSettings.tags;
+		const initialVisibleColumns: Record<string, boolean> = {};
+		columns.forEach((col) => {
+			initialVisibleColumns[col.key] =
+				savedSettings[col.key] !== undefined ? savedSettings[col.key] : col.visible !== false;
+		});
+		visibleColumns = initialVisibleColumns;
 	}
 
 	function toggleDropdown(tagName: string) {
@@ -262,6 +272,10 @@
 	$: if (!isLoading && repository) {
 		loadTranslations($currentLanguage);
 	}
+
+	$: if (Object.keys(visibleColumns).length > 0) {
+		config.setTableSettings('tags', visibleColumns);
+	}
 </script>
 
 <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -303,6 +317,7 @@
 				settingsTooltip={translations.settingsTooltip}
 				columnsLabel={translations.columnsLabel}
 				onRowClick={handleTagClick}
+				bind:visibleColumns
 			>
 				<svelte:fragment slot="cell" let:row let:column let:value>
 					{#if column.key === 'name'}
