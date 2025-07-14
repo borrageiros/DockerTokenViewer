@@ -12,7 +12,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
 		const accessToken = await getDockerHubToken(user, token);
 
-		if (!accessToken) {
+		if (!accessToken || !accessToken.access_token) {
 			return new Response('Invalid credentials or permissions', {
 				status: 401
 			});

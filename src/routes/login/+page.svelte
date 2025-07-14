@@ -58,7 +58,6 @@
 
 		try {
 			const response = await login(token, organization, user);
-			const data = await response.json();
 
 			if (!response.ok) {
 				if (response.status === 401) {
@@ -69,6 +68,7 @@
 				return;
 			}
 
+			const data = await response.json();
 			config.addAccount(organization, data.data);
 			goto('/');
 		} catch (e) {
