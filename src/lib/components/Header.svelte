@@ -1,8 +1,9 @@
 <script lang="ts">
 	import AccountSwitcher from './AccountSwitcher.svelte';
+	import Button from './Button.svelte';
 	import ThemeSwitcher from './ThemeSwitcher.svelte';
 	import LanguageSwitcher from './LanguageSwitcher.svelte';
-	import { goto } from '$app/navigation';
+	import { openInApp } from '$lib/utils/common';
 	import { currentLanguage, t, loadLanguageTranslations } from '$lib/stores/i18n';
 	import { APP_NAME } from '$lib/consts';
 
@@ -33,18 +34,16 @@
 	<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 		<div class="flex h-16 items-center justify-between">
 			<div class="flex items-center">
-				<div
+				<a
+					href="/"
 					class="flex cursor-pointer items-center space-x-3"
-					on:click={() => goto('/')}
-					on:keydown={(e) => {}}
-					role="button"
-					tabindex="0"
+					on:click={(event) => openInApp(event, '/')}
 				>
 					<img src="/docker.svg" alt={APP_NAME} class="h-8 w-8" />
 					<h1 class="hidden text-xl font-bold text-gray-900 sm:block dark:text-white">
 						{APP_NAME}
 					</h1>
-				</div>
+				</a>
 			</div>
 
 			<!-- Desktop menu -->
@@ -56,14 +55,14 @@
 
 			<!-- Mobile menu button -->
 			<div class="md:hidden">
-				<button
+				<Button
+					variant="icon"
 					on:click={toggleMenu}
-					class="inline-flex items-center justify-center rounded-md p-2 text-gray-600 hover:bg-gray-100 hover:text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none focus:ring-inset dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
 					aria-expanded={isMenuOpen}
 					aria-label="Abrir menú"
 				>
 					<svg
-						class="h-6 w-6"
+						class="h-5 w-5"
 						fill="none"
 						viewBox="0 0 24 24"
 						stroke-width="1.5"
@@ -79,7 +78,7 @@
 							/>
 						{/if}
 					</svg>
-				</button>
+				</Button>
 			</div>
 		</div>
 

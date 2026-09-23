@@ -1,7 +1,10 @@
 <script lang="ts">
-	import { createEventDispatcher, onMount, onDestroy } from 'svelte';
+	import { createEventDispatcher, onMount, onDestroy, tick } from 'svelte';
 	import { browser } from '$app/environment';
 	import type { Column, Row } from './Table.types';
+	import Button from './Button.svelte';
+	import Dropdown from './Dropdown.svelte';
+	import { openInApp } from '$lib/utils/common';
 
 	export let columns: Column[] = [];
 	export let rows: Row[] = [];
@@ -9,6 +12,7 @@
 	export let isEmpty = false;
 	export let emptyMessage = 'No data available';
 	export let onRowClick: ((row: Row) => void) | null = null;
+	export let getRowHref: ((row: Row) => string) | null = null;
 	export let onScroll: ((event: Event) => void) | null = null;
 	export let isLoadingMore = false;
 	export let maxHeight = 'h-[calc(100vh-15rem)]';
@@ -20,10 +24,28 @@
 	export let settingsTooltip = 'Configure columns';
 	export let columnsLabel = 'Visible columns';
 	export let visibleColumns: Record<string, boolean> = {};
+	export let searchModes: { id: string; label: string }[] = [];
+	export let searchMode = '';
+	export let searchModesLabel = 'Search mode';
+	export let onSearchModeChange: ((mode: string) => void) | null = null;
+	export let submitSearchOnly = false;
+	export let infoMessage = '';
+	export let progress: { completed: number; total: number } | null = null;
+	export let latestOnly = false;
+	export let latestOnlyLabel = '';
+	export let matchCountText = '';
 
 	const dispatch = createEventDispatcher();
 	let searchTimeout: ReturnType<typeof setTimeout>;
 	let isSettingsOpen = false;
+	let isSearchModeOpen = false;
+	let inputValue = '';
+	let appliedSearchValue = '';
+	let searchInput: HTMLInputElement | undefined;
+	let infoBarHeight = 0;
+
+	$: showInfoBar = Boolean(latestOnlyLabel || infoMessage || progress || matchCountText);
+	$: if (!showInfoBar) infoBarHeight = 0;
 
 	let sortColumn: string | null = null;
 	let sortDirection: 'asc' | 'desc' = 'asc';
@@ -44,20 +66,45 @@
 		dispatch('scroll', event);
 	}
 
-	function handleSearch(event: Event) {
-		const target = event.target as HTMLInputElement;
-		const searchTerm = target.value;
+	function submitCurrentSearch() {
+		if (searchTimeout) {
+			clearTimeout(searchTimeout);
+		}
+
+		if (onSearch) {
+			onSearch(inputValue);
+		}
+		dispatch('search', inputValue);
+	}
+
+	function handleSearchInput() {
+		if (submitSearchOnly) return;
 
 		if (searchTimeout) {
 			clearTimeout(searchTimeout);
 		}
 
 		searchTimeout = setTimeout(() => {
-			if (onSearch) {
-				onSearch(searchTerm);
-			}
-			dispatch('search', searchTerm);
+			submitCurrentSearch();
 		}, 500);
+	}
+
+	function handleSearchKeydown(event: KeyboardEvent) {
+		if (event.key !== 'Enter') return;
+		event.preventDefault();
+		submitCurrentSearch();
+	}
+
+	function selectSearchMode(mode: string) {
+		isSearchModeOpen = false;
+		searchMode = mode;
+		inputValue = '';
+		if (searchTimeout) {
+			clearTimeout(searchTimeout);
+		}
+		if (onSearchModeChange) {
+			onSearchModeChange(mode);
+		}
 	}
 
 	function handleSort(column: Column) {
@@ -148,31 +195,53 @@
 		};
 	}
 
-	function toggleSettings() {
-		isSettingsOpen = !isSettingsOpen;
+	function canCaptureTyping(event: KeyboardEvent): boolean {
+		if (!onSearch || !searchInput) return false;
+		if (event.defaultPrevented || event.isComposing) return false;
+		if (event.ctrlKey || event.metaKey || event.altKey) return false;
+		if (event.key.length !== 1) return false;
+
+		const target = event.target;
+		if (!(target instanceof HTMLElement)) return true;
+		if (target.isContentEditable) return false;
+
+		const tag = target.tagName;
+		return tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT' && tag !== 'BUTTON';
 	}
 
-	function handleClickOutside(event: Event) {
-		const target = event.target as HTMLElement;
-		if (!target.closest('.settings-container')) {
-			isSettingsOpen = false;
+	async function handleWindowKeydown(event: KeyboardEvent) {
+		if (!canCaptureTyping(event)) return;
+
+		event.preventDefault();
+		inputValue += event.key;
+		await tick();
+		searchInput?.focus();
+		searchInput?.setSelectionRange(inputValue.length, inputValue.length);
+		handleSearchInput();
+	}
+
+	$: if (searchValue !== appliedSearchValue) {
+		appliedSearchValue = searchValue;
+		const typingAhead =
+			!!searchInput && document.activeElement === searchInput && inputValue.startsWith(searchValue);
+		if (!typingAhead) {
+			inputValue = searchValue;
 		}
 	}
 
-	// Reactive statements
 	$: filteredColumns = columns.filter((column) => visibleColumns[column.key]);
 
 	$: sortedRows = sortRows(rows, sortColumn, sortDirection);
 
 	onMount(() => {
 		if (browser) {
-			document.addEventListener('click', handleClickOutside);
+			window.addEventListener('keydown', handleWindowKeydown, true);
 		}
 	});
 
 	onDestroy(() => {
 		if (browser) {
-			document.removeEventListener('click', handleClickOutside);
+			window.removeEventListener('keydown', handleWindowKeydown, true);
 		}
 	});
 </script>
@@ -182,25 +251,73 @@
 >
 	{#if onRefresh || onSearch}
 		<div
-			class="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-2 dark:border-gray-700 dark:bg-gray-900"
+			class="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200 bg-gray-50 px-4 py-2 dark:border-gray-700 dark:bg-gray-900"
 		>
 			{#if onSearch}
-				<div class="flex items-center space-x-2">
-					<svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-						/>
-					</svg>
+				<div class="flex flex-wrap items-center gap-2">
+					<Button
+						variant="primary"
+						on:click={submitCurrentSearch}
+						title={searchPlaceholder}
+						aria-label={searchPlaceholder}
+					>
+						<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2.5"
+								d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+							/>
+						</svg>
+					</Button>
 					<input
 						type="text"
 						placeholder={searchPlaceholder}
-						value={searchValue}
-						on:input={handleSearch}
+						bind:this={searchInput}
+						bind:value={inputValue}
+						on:input={handleSearchInput}
+						on:keydown={handleSearchKeydown}
+						autocomplete="off"
+						spellcheck="false"
 						class="w-64 rounded-md border border-gray-300 px-3 py-1 text-sm placeholder-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500 dark:focus:border-blue-400"
 					/>
+					{#if searchModes.length > 0}
+						<Dropdown bind:open={isSearchModeOpen} align="start" width="md">
+							<svelte:fragment slot="trigger" let:toggle let:open>
+								<button
+									type="button"
+									on:click={toggle}
+									aria-label={searchModesLabel}
+									aria-expanded={open}
+									class="inline-flex cursor-pointer items-center gap-2 rounded-md border border-gray-300 bg-white py-1 pr-2 pl-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+								>
+									{searchModes.find((mode) => mode.id === searchMode)?.label}
+									<svg
+										class="h-4 w-4 text-gray-500 dark:text-gray-400"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M6 9l6 6 6-6"
+										/>
+									</svg>
+								</button>
+							</svelte:fragment>
+							{#each searchModes as mode (mode.id)}
+								<Button
+									variant="menu"
+									active={mode.id === searchMode}
+									on:click={() => selectSearchMode(mode.id)}
+								>
+									{mode.label}
+								</Button>
+							{/each}
+						</Dropdown>
+					{/if}
 				</div>
 			{:else}
 				<div></div>
@@ -208,9 +325,9 @@
 
 			<div class="flex items-center space-x-2">
 				{#if onRefresh}
-					<button
+					<Button
+						variant="icon"
 						on:click={onRefresh}
-						class="inline-flex items-center rounded-md p-1.5 text-gray-600 hover:bg-gray-200 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
 						title={refreshTooltip}
 						aria-label={refreshTooltip}
 						disabled={isLoading}
@@ -230,15 +347,17 @@
 								d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"
 							/></svg
 						>
-					</button>
+					</Button>
 				{/if}
 
-				<div class="settings-container relative">
-					<button
-						on:click={toggleSettings}
-						class="inline-flex items-center rounded-md p-1.5 text-gray-600 hover:bg-gray-200 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
+				<Dropdown bind:open={isSettingsOpen} align="end" width="md">
+					<svelte:fragment slot="trigger" let:toggle let:open>
+					<Button
+						variant="icon"
+						on:click={toggle}
 						title={settingsTooltip}
 						aria-label={settingsTooltip}
+						aria-expanded={open}
 					>
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
@@ -256,43 +375,77 @@
 								d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"
 							/>
 						</svg>
-					</button>
+					</Button>
+					</svelte:fragment>
 
-					{#if isSettingsOpen}
+					<div class="px-4 py-2 text-xs font-medium text-gray-500 uppercase dark:text-gray-400">
+						{columnsLabel}
+					</div>
+					{#each columns as column}
 						<div
-							class="ring-opacity-5 absolute right-0 z-[100] mt-1 w-56 rounded-md bg-white py-1 shadow-lg ring-1 ring-black dark:bg-gray-800"
+							class="flex cursor-pointer items-center px-4 py-2 text-sm whitespace-normal text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+							on:click|preventDefault={() => toggleColumnVisibility(column.key)}
+							on:keydown|preventDefault={(e) => {
+								if (e.key === 'Enter' || e.key === ' ') toggleColumnVisibility(column.key);
+							}}
+							tabindex="0"
+							role="checkbox"
+							aria-checked={visibleColumns[column.key]}
+							aria-label={column.label}
 						>
-							<div class="px-4 py-2 text-xs font-medium text-gray-500 uppercase dark:text-gray-400">
-								{columnsLabel}
-							</div>
-							{#each columns as column}
-								<div
-									class="flex cursor-pointer items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-									on:click|preventDefault={() => toggleColumnVisibility(column.key)}
-									on:keydown|preventDefault={(e) => {
-										if (e.key === 'Enter' || e.key === ' ') toggleColumnVisibility(column.key);
-									}}
-									tabindex="0"
-									role="checkbox"
-									aria-checked={visibleColumns[column.key]}
-									aria-label={column.label}
-								>
-									<input
-										type="checkbox"
-										checked={visibleColumns[column.key]}
-										class="mr-3 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
-										readonly
-									/>
-									{column.label}
-								</div>
-							{/each}
+							<input
+								type="checkbox"
+								checked={visibleColumns[column.key]}
+								class="mr-3 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+								readonly
+							/>
+							{column.label}
 						</div>
-					{/if}
-				</div>
+					{/each}
+				</Dropdown>
 			</div>
 		</div>
+		{#if showInfoBar}
+			<div
+				bind:offsetHeight={infoBarHeight}
+				class="border-b border-gray-200 bg-gray-50 px-4 py-2 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+			>
+				<div class="flex items-center gap-4">
+					{#if latestOnlyLabel}
+						<label class="flex shrink-0 cursor-pointer items-center gap-2">
+							<input
+								type="checkbox"
+								bind:checked={latestOnly}
+								class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+							/>
+							{latestOnlyLabel}
+						</label>
+					{/if}
+					{#if infoMessage}
+						<p class="min-w-0 flex-1 truncate">{infoMessage}</p>
+					{:else}
+						<div class="flex-1"></div>
+					{/if}
+					{#if matchCountText}
+						<p class="shrink-0">{matchCountText}</p>
+					{/if}
+				</div>
+				{#if progress && progress.total > 0 && progress.completed < progress.total}
+					<div class="mt-2 h-1 w-full overflow-hidden rounded bg-gray-200 dark:bg-gray-700">
+						<div
+							class="h-full bg-blue-600 transition-[width] duration-200"
+							style="width: {(progress.completed / progress.total) * 100}%"
+						></div>
+					</div>
+				{/if}
+			</div>
+		{/if}
 	{/if}
-	<div class="{maxHeight} custom-scrollbar overflow-y-auto" on:scroll={handleScroll}>
+	<div
+		class="{infoBarHeight > 0 ? '' : maxHeight} custom-scrollbar overflow-y-auto"
+		style={infoBarHeight > 0 ? `height: calc(100vh - 15rem - ${infoBarHeight}px)` : undefined}
+		on:scroll={handleScroll}
+	>
 		<table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
 			<thead class="sticky top-0 z-10 bg-gray-50 dark:bg-gray-900">
 				<tr>
@@ -370,17 +523,38 @@
 					</tr>
 				{:else}
 					{#each sortedRows as row}
+						{@const href = getRowHref ? getRowHref(row) : ''}
 						<tr
-							class="hover:bg-gray-50 dark:hover:bg-gray-700 {onRowClick ? 'cursor-pointer' : ''}"
-							on:click={() => handleRowClick(row)}
+							class="hover:bg-gray-50 dark:hover:bg-gray-700 {onRowClick || href
+								? 'cursor-pointer'
+								: ''}"
+							on:click={() => {
+								if (!href) handleRowClick(row);
+							}}
 						>
 							{#each filteredColumns as column}
-								<td class="px-6 py-4 {column.key === 'description' ? '' : 'whitespace-nowrap'}">
-									<slot name="cell" {row} {column} value={row[column.key]}>
-										<div class="text-sm text-gray-900 dark:text-white">
-											{row[column.key] || '-'}
+								<td class={column.key === 'description' ? '' : 'whitespace-nowrap'}>
+									{#if href && column.key !== 'copy'}
+										<a
+											{href}
+											class="block cursor-pointer px-6 py-4 text-inherit no-underline"
+											on:click={(event) => openInApp(event, href)}
+										>
+											<slot name="cell" {row} {column} value={row[column.key]}>
+												<div class="text-sm text-gray-900 dark:text-white">
+													{row[column.key] || '-'}
+												</div>
+											</slot>
+										</a>
+									{:else}
+										<div class="px-6 py-4">
+											<slot name="cell" {row} {column} value={row[column.key]}>
+												<div class="text-sm text-gray-900 dark:text-white">
+													{row[column.key] || '-'}
+												</div>
+											</slot>
 										</div>
-									</slot>
+									{/if}
 								</td>
 							{/each}
 						</tr>

@@ -2,6 +2,8 @@
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import { getTagDetails, type Tag } from '$lib/api';
+	import Button from '$lib/components/Button.svelte';
+	import CopiedNotice from '$lib/components/CopiedNotice.svelte';
 	import Header from '$lib/components/Header.svelte';
 	import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
 	import { currentLanguage, t, loadLanguageTranslations } from '$lib/stores/i18n';
@@ -15,6 +17,7 @@
 	let repository: string = '';
 	let tag: string = '';
 	let initialLoading = true;
+	let copyNotice: { notify: () => void } | undefined;
 
 	$: repository = $page.params.repository;
 	$: tag = $page.params.tag;
@@ -269,28 +272,33 @@
 										<p class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
 											{translations.commands.pullCommand}
 										</p>
-										<div class="flex">
+										<div class="flex items-center gap-2">
 											<input
 												type="text"
 												value={getPullCommand(repository, tag)}
 												readonly
-												class="flex-1 rounded-l-md border border-gray-300 bg-gray-50 px-3 py-2 font-mono text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+												class="flex-1 rounded-md border border-gray-300 bg-gray-50 px-3 py-2 font-mono text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
 											/>
-											<button
-												on:click={() => copyPullCommand(repository, tag)}
-												class="rounded-r-md border border-l-0 border-gray-300 bg-blue-50 px-3 py-2 text-blue-600 hover:bg-blue-100 dark:border-gray-600 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800"
-												title={translations.commands.copy}
-												aria-label={translations.commands.copy}
-											>
-												<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path
-														stroke-linecap="round"
-														stroke-linejoin="round"
-														stroke-width="2"
-														d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-													/>
-												</svg>
-											</button>
+											<CopiedNotice bind:this={copyNotice} label={translations.commands?.copied}>
+												<Button
+													variant="icon"
+													on:click={() => {
+														copyPullCommand(repository, tag);
+														copyNotice?.notify();
+													}}
+													title={translations.commands.copy}
+													aria-label={translations.commands.copy}
+												>
+													<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+														<path
+															stroke-linecap="round"
+															stroke-linejoin="round"
+															stroke-width="2"
+															d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+														/>
+													</svg>
+												</Button>
+											</CopiedNotice>
 										</div>
 									</div>
 								</div>

@@ -1,133 +1,146 @@
 {
-  "login": {
-    "title": "Docker Token Viewer",
-    "subtitle": "Inicia sesión para acceder a tus repositorios",
-    "organization": "Organización / Espacio de nombres",
-    "user": "Usuario de Docker Hub",
-    "token": "Token de Docker Hub",
-    "submit": "Iniciar sesión",
-    "howToGetToken": "¿Cómo obtener un token?",
-    "step1": "Ve a",
-    "step1Link": "Docker Hub Security",
-    "step2": "Haz clic en \"Personal access tokens > Generate new token\"",
-    "step3": "Dale un nombre descriptivo y selecciona permisos de lectura",
-    "step4": "Copia el token generado y úsalo para iniciar sesión aquí",
-    "errors": {
-      "required": "Por favor, completa todos los campos",
-      "unauthorized": "Credenciales inválidas o sin permisos",
-      "connection": "Error de conexión. Inténtalo de nuevo."
-    },
-    "backToDashboard": "Volver al dashboard"
-  },
-  "accountSwitcher": {
-    "savedAccounts": "Cuentas guardadas",
-    "deleteAccountTitle": "Eliminar cuenta",
-    "noAccounts": "No hay cuentas guardadas",
-    "addAccount": "Agregar cuenta"
-  },
-  "header": {
-    "language": "Idioma",
-    "theme": "Tema",
-    "session": "Sesión"
-  },
-  "table": {
-    "refresh": "Recargar",
-    "search": "Buscar...",
-    "settings": "Configurar columnas",
-    "columnsLabel": "Columnas visibles",
-    "empty": "No hay datos disponibles"
-  },
-  "repositories": {
-    "title": "Repositorios",
-    "table": {
-      "name": "Nombre",
-      "description": "Descripción",
-      "downloads": "Descargas",
-      "size": "Tamaño",
-      "lastUpdate": "Última actualización",
-      "namespace": "Namespace",
-      "repositoryType": "Tipo de repositorio",
-      "status": "Estado",
-      "statusDescription": "Descripción del estado",
-      "isPrivate": "Privado",
-      "starCount": "Estrellas",
-      "lastModified": "Última modificación",
-      "dateRegistered": "Fecha de registro",
-      "affiliation": "Afiliación",
-      "mediaTypes": "Tipos de medio",
-      "contentTypes": "Tipos de contenido",
-      "categories": "Categorías"
-    },
-    "badges": {
-      "today": "HOY",
-      "yesterday": "AYER",
-      "lastDays": "ÚLTIMOS DÍAS",
-      "lastDaysTooltip": "Actualizado en los últimos 7 días"
-    },
-    "noDescription": "Sin descripción",
-    "loading": "Cargando repositorios...",
-    "empty": "No se encontraron repositorios",
-    "error": "Error al cargar repositorios"
-  },
-  "tags": {
-    "title": "Tags de {repository}",
-    "backToRepos": "← Volver a repositorios",
-    "table": {
-      "name": "Nombre",
-      "size": "Tamaño",
-      "pushedBy": "Subido por",
-      "lastUpdate": "Última actualización",
-      "copy": "Copiar",
-      "creator": "Creador",
-      "id": "ID",
-      "lastUpdater": "Último en actualizar",
-      "repository": "Repositorio",
-      "v2": "V2",
-      "tagStatus": "Estado del Tag",
-      "tagLastPulled": "Última descarga",
-      "tagLastPushed": "Última subida",
-      "mediaType": "Tipo de medio",
-      "contentType": "Tipo de contenido",
-      "digest": "Digest"
-    },
-    "copyRepoImageTag": "Copiar repo/imagen:tag",
-    "copyImageTag": "Copiar imagen:tag",
-    "copyOnlyTag": "Copiar tag",
-    "copyPullCommand": "Copiar comando de pull",
-    "copyTooltip": "Copiar comando docker pull",
-    "copied": "¡Copiado!",
-    "latest": "LATEST",
-    "loading": "Cargando tags...",
-    "empty": "No se encontraron tags",
-    "error": "Error al cargar tags"
-  },
-  "tagDetails": {
-    "title": "Detalles del tag {tag}",
-    "loading": "Cargando detalles del tag...",
-    "error": "Error al cargar detalles del tag",
-    "info": {
-      "title": "Información General",
-      "name": "Nombre del tag",
-      "size": "Tamaño total",
-      "lastUpdated": "Última actualización",
-      "pushedBy": "Subido por",
-      "pullCount": "Veces descargado",
-      "digest": "Digest",
-      "mediaType": "Tipo de media"
-    },
-    "images": {
-      "title": "Imágenes",
-      "architecture": "Arquitectura",
-      "os": "Sistema operativo",
-      "size": "Tamaño",
-      "digest": "Digest",
-      "status": "Estado"
-    },
-    "commands": {
-      "title": "Comandos",
-      "pullCommand": "Comando de descarga",
-      "copy": "Copiar",
-      "copied": "¡Copiado!"
-    }
-  }
+	"login": {
+		"title": "Docker Token Viewer",
+		"subtitle": "Inicia sesión para acceder a tus repositorios",
+		"organization": "Organización / Espacio de nombres",
+		"user": "Usuario de Docker Hub",
+		"token": "Token de Docker Hub",
+		"submit": "Iniciar sesión",
+		"howToGetToken": "¿Cómo obtener un token?",
+		"step1": "Ve a",
+		"step1Link": "Docker Hub Security",
+		"step2": "Haz clic en \"Personal access tokens > Generate new token\"",
+		"step3": "Dale un nombre descriptivo y selecciona permisos de lectura",
+		"step4": "Copia el token generado y úsalo para iniciar sesión aquí",
+		"errors": {
+			"required": "Por favor, completa todos los campos",
+			"unauthorized": "Credenciales inválidas o sin permisos",
+			"connection": "Error de conexión. Inténtalo de nuevo."
+		},
+		"backToDashboard": "Volver al dashboard"
+	},
+	"accountSwitcher": {
+		"savedAccounts": "Cuentas guardadas",
+		"deleteAccountTitle": "Eliminar cuenta",
+		"noAccounts": "No hay cuentas guardadas",
+		"addAccount": "Agregar cuenta"
+	},
+	"header": {
+		"language": "Idioma",
+		"theme": "Tema",
+		"session": "Sesión"
+	},
+	"table": {
+		"refresh": "Recargar",
+		"search": "Buscar...",
+		"settings": "Configurar columnas",
+		"columnsLabel": "Columnas visibles",
+		"empty": "No hay datos disponibles"
+	},
+	"repositories": {
+		"title": "Repositorios",
+		"table": {
+			"name": "Nombre",
+			"description": "Descripción",
+			"downloads": "Descargas",
+			"size": "Tamaño",
+			"lastUpdate": "Última actualización",
+			"namespace": "Namespace",
+			"repositoryType": "Tipo de repositorio",
+			"status": "Estado",
+			"statusDescription": "Descripción del estado",
+			"isPrivate": "Privado",
+			"starCount": "Estrellas",
+			"lastModified": "Última modificación",
+			"dateRegistered": "Fecha de registro",
+			"affiliation": "Afiliación",
+			"mediaTypes": "Tipos de medio",
+			"contentTypes": "Tipos de contenido",
+			"categories": "Categorías"
+		},
+		"badges": {
+			"today": "HOY",
+			"yesterday": "AYER",
+			"lastDays": "ÚLTIMOS DÍAS",
+			"lastDaysTooltip": "Actualizado en los últimos 7 días"
+		},
+		"noDescription": "Sin descripción",
+		"loading": "Cargando repositorios...",
+		"empty": "No se encontraron repositorios",
+		"error": "Error al cargar repositorios",
+		"searchModeLabel": "Modo de búsqueda",
+		"searchModeRepositories": "Buscar repositorios",
+		"searchModeTags": "Buscar tags",
+		"tagSearchHint": "Escribe al menos 3 caracteres y pulsa Enter para buscar tags en todos los repositorios",
+		"tagSearchTooShort": "Escribe al menos 3 caracteres",
+		"tagSearchStarting": "Preparando la búsqueda de tags…",
+		"tagSearchProgress": "Buscando en {completed} de {total} repositorios",
+		"tagSearchDone": "{matches} coincidencias",
+		"tagSearchLatestOnly": "Solo el más reciente por repositorio",
+		"tagSearchFailed": "{failed} repositorios no se pudieron consultar",
+		"tagSearchTag": "Tag",
+		"tagSearchEmpty": "No se encontraron tags",
+		"tagSearchError": "Error al buscar tags"
+	},
+	"tags": {
+		"title": "Tags de {repository}",
+		"backToRepos": "← Volver a repositorios",
+		"table": {
+			"name": "Nombre",
+			"size": "Tamaño",
+			"pushedBy": "Subido por",
+			"lastUpdate": "Última actualización",
+			"copy": "Copiar",
+			"creator": "Creador",
+			"id": "ID",
+			"lastUpdater": "Último en actualizar",
+			"repository": "Repositorio",
+			"v2": "V2",
+			"tagStatus": "Estado del Tag",
+			"tagLastPulled": "Última descarga",
+			"tagLastPushed": "Última subida",
+			"mediaType": "Tipo de medio",
+			"contentType": "Tipo de contenido",
+			"digest": "Digest"
+		},
+		"copyRepoImageTag": "Copiar repo/imagen:tag",
+		"copyImageTag": "Copiar imagen:tag",
+		"copyOnlyTag": "Copiar tag",
+		"copyPullCommand": "Copiar comando de pull",
+		"copyTooltip": "Copiar comando docker pull",
+		"copied": "¡Copiado!",
+		"latest": "LATEST",
+		"loading": "Cargando tags...",
+		"empty": "No se encontraron tags",
+		"error": "Error al cargar tags"
+	},
+	"tagDetails": {
+		"title": "Detalles del tag {tag}",
+		"loading": "Cargando detalles del tag...",
+		"error": "Error al cargar detalles del tag",
+		"info": {
+			"title": "Información General",
+			"name": "Nombre del tag",
+			"size": "Tamaño total",
+			"lastUpdated": "Última actualización",
+			"pushedBy": "Subido por",
+			"pullCount": "Veces descargado",
+			"digest": "Digest",
+			"mediaType": "Tipo de media"
+		},
+		"images": {
+			"title": "Imágenes",
+			"architecture": "Arquitectura",
+			"os": "Sistema operativo",
+			"size": "Tamaño",
+			"digest": "Digest",
+			"status": "Estado"
+		},
+		"commands": {
+			"title": "Comandos",
+			"pullCommand": "Comando de descarga",
+			"copy": "Copiar",
+			"copied": "¡Copiado!"
+		}
+	}
 }

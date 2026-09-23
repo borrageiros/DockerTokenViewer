@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { login } from '$lib/api';
+	import Button from '$lib/components/Button.svelte';
 	import ThemeSwitcher from '$lib/components/ThemeSwitcher.svelte';
 	import LanguageSwitcher from '$lib/components/LanguageSwitcher.svelte';
 	import { currentLanguage, t, loadLanguageTranslations } from '$lib/stores/i18n';
@@ -41,10 +42,6 @@
 			loginSuccess: t('login.success', language),
 			backToDashboard: t('login.backToDashboard', language)
 		};
-	}
-
-	function handleBackToDashboard() {
-		goto('/');
 	}
 
 	async function handleSubmit() {
@@ -99,11 +96,7 @@
 
 		{#if hasAccounts}
 			<div class="flex justify-center">
-				<button
-					type="button"
-					on:click={handleBackToDashboard}
-					class="inline-flex items-center rounded-md border border-transparent bg-indigo-100 px-4 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-200 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none dark:bg-indigo-900/30 dark:text-indigo-300 dark:hover:bg-indigo-900/50"
-				>
+				<Button variant="secondary" href="/">
 					<svg
 						class="mr-2 -ml-1 h-5 w-5"
 						xmlns="http://www.w3.org/2000/svg"
@@ -117,7 +110,7 @@
 						/>
 					</svg>
 					{translations.backToDashboard}
-				</button>
+				</Button>
 			</div>
 		{/if}
 
@@ -190,11 +183,7 @@
 			{/if}
 
 			<div>
-				<button
-					type="submit"
-					disabled={isLoading}
-					class="group relative flex w-full justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
-				>
+				<Button type="submit" variant="primary" disabled={isLoading} class="w-full">
 					{#if isLoading}
 						<svg
 							class="mr-3 -ml-1 h-5 w-5 animate-spin text-white"
@@ -218,7 +207,7 @@
 						</svg>
 					{/if}
 					{translations.submit}
-				</button>
+				</Button>
 			</div>
 		</form>
 

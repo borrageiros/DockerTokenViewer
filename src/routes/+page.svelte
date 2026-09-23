@@ -1,12 +1,18 @@
 <script lang="ts">
-	import { getRepositories, type RepositoriesResponse } from '$lib/api';
-	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
+	import {
+		getRepositories,
+		searchTagsAcrossRepositories,
+		type RepositoriesResponse,
+		type Repository,
+		type TagSearchMatch
+	} from '$lib/api';
+	import { onDestroy, onMount } from 'svelte';
 	import Header from '$lib/components/Header.svelte';
 	import Badge from '$lib/components/Badge.svelte';
+	import CopyTagButton from '$lib/components/CopyTagButton.svelte';
 	import Table from '$lib/components/Table.svelte';
 	import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
-	import type { Column } from '$lib/components/Table.types';
+	import type { Column, Row } from '$lib/components/Table.types';
 	import { currentLanguage, t, loadLanguageTranslations } from '$lib/stores/i18n';
 	import { APP_NAME } from '$lib/consts';
 	import {
@@ -15,7 +21,8 @@
 		formatDate,
 		isToday,
 		isYesterday,
-		isThisWeek
+		isThisWeek,
+		appPath
 	} from '$lib/utils/common';
 	import { baseRepository } from '$lib/stores/repository';
 	import { config } from '$lib/stores/config';
@@ -28,9 +35,33 @@
 	let error: string | null = null;
 	let translations: Record<string, string> = {};
 	let columns: Column[] = [];
+	const TAG_SEARCH_MIN_LENGTH = 3;
+
+	type SearchMode = 'repositories' | 'tags';
+	type TagSearchState = 'idle' | 'short' | 'searching' | 'done';
+	type TagSearchRow = {
+		repository: string;
+		name: string;
+		full_size: number;
+		last_updated: string;
+		last_updater_username: string;
+	};
+
 	let searchTerm = '';
 	let initialLoading = true;
 	let visibleColumns: Record<string, boolean> = {};
+	let repoVisibleColumns: Record<string, boolean> = {};
+	let tagVisibleColumns: Record<string, boolean> = {};
+	let searchMode: SearchMode = 'repositories';
+	let tagColumns: Column[] = [];
+	let tagRows: TagSearchRow[] = [];
+	let tagSearchState: TagSearchState = 'idle';
+	let tagSearchInfo = '';
+	let latestOnly = false;
+	let tagSearchProgress: { completed: number; total: number } | null = null;
+	let allRepositories: Repository[] = [];
+	let tagSearchAbort: AbortController | null = null;
+	let tagSearchGeneration = 0;
 
 	async function loadTranslations(language: 'es' | 'en') {
 		await loadLanguageTranslations(language);
@@ -64,7 +95,25 @@
 			searchPlaceholder: t('table.search', language),
 			settingsTooltip: t('table.settings', language),
 			columnsLabel: t('table.columnsLabel', language),
-			emptyMessage: t('table.empty', language)
+			emptyMessage: t('table.empty', language),
+			searchModeLabel: t('repositories.searchModeLabel', language),
+			searchModeRepositories: t('repositories.searchModeRepositories', language),
+			searchModeTags: t('repositories.searchModeTags', language),
+			tagSearchHint: t('repositories.tagSearchHint', language),
+			tagSearchTooShort: t('repositories.tagSearchTooShort', language),
+			tagSearchStarting: t('repositories.tagSearchStarting', language),
+			tagSearchProgress: t('repositories.tagSearchProgress', language),
+			tagSearchDone: t('repositories.tagSearchDone', language),
+			tagSearchFailed: t('repositories.tagSearchFailed', language),
+			tagSearchLatestOnly: t('repositories.tagSearchLatestOnly', language),
+			tagSearchEmpty: t('repositories.tagSearchEmpty', language),
+			tagSearchError: t('repositories.tagSearchError', language),
+			tagTableRepository: t('tags.table.repository', language),
+			tagTableName: t('repositories.tagSearchTag', language),
+			tagTableSize: t('tags.table.size', language),
+			tagTablePushedBy: t('tags.table.pushedBy', language),
+			tagTableLastUpdate: t('tags.table.lastUpdate', language),
+			tagTableCopy: t('tags.table.copy', language)
 		};
 
 		columns = [
@@ -133,21 +182,108 @@
 			{ key: 'categories', label: translations.repoTableCategories, sortable: true, visible: false }
 		];
 
+		tagColumns = [
+			{
+				key: 'repository',
+				label: translations.tagTableRepository,
+				sortable: true,
+				visible: true
+			},
+			{ key: 'name', label: translations.tagTableName, sortable: true, visible: true },
+			{ key: 'full_size', label: translations.tagTableSize, sortable: true, visible: true },
+			{
+				key: 'last_updater_username',
+				label: translations.tagTablePushedBy,
+				sortable: true,
+				visible: true
+			},
+			{
+				key: 'last_updated',
+				label: translations.tagTableLastUpdate,
+				sortable: true,
+				visible: true
+			},
+			{
+				key: 'copy',
+				label: translations.tagTableCopy,
+				width: 'w-24',
+				sortable: false,
+				visible: true
+			}
+		];
+
 		const savedSettings = $config.tableSettings.repositories;
 		const initialVisibleColumns: Record<string, boolean> = {};
 		columns.forEach((col) => {
 			initialVisibleColumns[col.key] =
 				savedSettings[col.key] !== undefined ? savedSettings[col.key] : col.visible !== false;
 		});
-		visibleColumns = initialVisibleColumns;
+		repoVisibleColumns = initialVisibleColumns;
+
+		const nextTagVisibleColumns = { ...tagVisibleColumns };
+		let tagVisibleColumnsChanged = Object.keys(tagVisibleColumns).length === 0;
+		tagColumns.forEach((col) => {
+			if (nextTagVisibleColumns[col.key] === undefined) {
+				nextTagVisibleColumns[col.key] = col.visible !== false;
+				tagVisibleColumnsChanged = true;
+			}
+		});
+		if (tagVisibleColumnsChanged) {
+			tagVisibleColumns = nextTagVisibleColumns;
+		}
+
+		visibleColumns = searchMode === 'tags' ? { ...tagVisibleColumns } : initialVisibleColumns;
 	}
 
-	function selectRepository(repoName: string) {
-		goto(`/repository/${repoName}`);
+	function rowHref(row: Record<string, unknown>) {
+		if (searchMode === 'tags') {
+			return appPath(String(row.repository), String(row.name));
+		}
+		return appPath(String(row.name));
 	}
 
-	function handleRepositoryClick(row: any) {
-		selectRepository(row.name as string);
+	function isAbortError(value: unknown): boolean {
+		return value instanceof Error && value.name === 'AbortError';
+	}
+
+	function abortTagSearch() {
+		tagSearchGeneration += 1;
+		tagSearchAbort?.abort();
+		tagSearchAbort = null;
+	}
+
+	function toTagRow(match: TagSearchMatch): TagSearchRow {
+		return {
+			repository: match.repository,
+			name: match.tag.name,
+			full_size: match.tag.full_size,
+			last_updated: match.tag.last_updated,
+			last_updater_username: match.tag.last_updater_username
+		};
+	}
+
+	function formatTagSearchProgress(completed: number, total: number) {
+		return translations.tagSearchProgress
+			.replace('{completed}', String(completed))
+			.replace('{total}', String(total));
+	}
+
+	function formatTagSearchFailed(failed: number) {
+		if (failed <= 0) return '';
+		return translations.tagSearchFailed.replace('{failed}', String(failed));
+	}
+
+	function latestTagPerRepository(rows: TagSearchRow[]) {
+		const byRepository = new Map<string, TagSearchRow>();
+		for (const row of rows) {
+			const current = byRepository.get(row.repository);
+			const rowTime = new Date(row.last_updated).getTime();
+			const currentTime = current ? new Date(current.last_updated).getTime() : 0;
+			if (!current || rowTime > currentTime) {
+				byRepository.set(row.repository, row);
+			}
+		}
+		return [...byRepository.values()];
 	}
 
 	async function loadRepositories(search?: string) {
@@ -156,6 +292,9 @@
 			error = null;
 			const searchOptions = search ? { name: search } : {};
 			repositories = await getRepositories(searchOptions);
+			if (!search) {
+				allRepositories = repositories.results;
+			}
 		} catch (e) {
 			console.error('Error loading repositories:', e);
 			error = 'Error loading data';
@@ -164,9 +303,116 @@
 		}
 	}
 
+	async function searchTags(search: string) {
+		const query = search.trim();
+		abortTagSearch();
+		const generation = tagSearchGeneration;
+		const controller = new AbortController();
+		tagSearchAbort = controller;
+
+		tagRows = [];
+		tagSearchProgress = null;
+		error = null;
+
+		if (query.length < TAG_SEARCH_MIN_LENGTH) {
+			tagSearchState = query.length === 0 ? 'idle' : 'short';
+			tagSearchInfo = '';
+			return;
+		}
+
+		tagSearchState = 'searching';
+		tagSearchInfo = translations.tagSearchStarting;
+
+		try {
+			let repos = allRepositories;
+			if (repos.length === 0) {
+				const data = await getRepositories({ signal: controller.signal });
+				if (generation !== tagSearchGeneration) return;
+				allRepositories = data.results;
+				repos = allRepositories;
+			}
+
+			tagSearchProgress = { completed: 0, total: repos.length };
+			tagSearchInfo = formatTagSearchProgress(0, repos.length);
+
+			const result = await searchTagsAcrossRepositories(query, repos, {
+				signal: controller.signal,
+				onRepositoryDone: ({ completed, total, failed, matches }) => {
+					if (generation !== tagSearchGeneration) return;
+					if (matches.length > 0) {
+						tagRows = [...tagRows, ...matches.map(toTagRow)];
+					}
+					tagSearchProgress = { completed, total };
+					tagSearchInfo =
+						failed > 0 && completed === total
+							? formatTagSearchFailed(failed)
+							: formatTagSearchProgress(completed, total);
+				}
+			});
+
+			if (generation !== tagSearchGeneration) return;
+			tagSearchState = 'done';
+			tagSearchProgress = null;
+			tagSearchInfo = formatTagSearchFailed(result.failed);
+		} catch (e) {
+			if (generation !== tagSearchGeneration || isAbortError(e) || controller.signal.aborted)
+				return;
+			abortTagSearch();
+			console.error('Error searching tags:', e);
+			error = translations.tagSearchError || 'Error searching tags';
+			tagSearchState = 'idle';
+			tagSearchInfo = '';
+			tagSearchProgress = null;
+			tagRows = [];
+		}
+	}
+
 	function handleSearch(search: string) {
 		searchTerm = search;
+		if (searchMode === 'tags') {
+			searchTags(search);
+			return;
+		}
 		loadRepositories(search);
+	}
+
+	function handleSearchModeChange(mode: string) {
+		abortTagSearch();
+		searchMode = mode === 'tags' ? 'tags' : 'repositories';
+		searchTerm = '';
+		tagRows = [];
+		tagSearchState = 'idle';
+		tagSearchInfo = '';
+		tagSearchProgress = null;
+		error = null;
+
+		if (searchMode === 'tags') {
+			visibleColumns = { ...tagVisibleColumns };
+			return;
+		}
+
+		visibleColumns = { ...repoVisibleColumns };
+		loadRepositories();
+	}
+
+	async function handleRefresh() {
+		if (searchMode === 'tags') {
+			allRepositories = [];
+			if (searchTerm.trim().length < TAG_SEARCH_MIN_LENGTH) {
+				try {
+					const data = await getRepositories();
+					allRepositories = data.results;
+				} catch (e) {
+					console.error('Error refreshing repositories:', e);
+					error = translations.repoError || 'Error loading data';
+				}
+				return;
+			}
+			await searchTags(searchTerm);
+			return;
+		}
+
+		await loadRepositories();
 	}
 
 	async function initializeApp() {
@@ -186,13 +432,46 @@
 		await initializeApp();
 	});
 
+	onDestroy(() => {
+		abortTagSearch();
+	});
+
 	$: if (!isLoading) {
 		loadTranslations($currentLanguage);
 	}
 
-	$: if (Object.keys(visibleColumns).length > 0) {
+	$: if (searchMode === 'repositories' && Object.keys(visibleColumns).length > 0) {
+		repoVisibleColumns = visibleColumns;
 		config.setTableSettings('repositories', visibleColumns);
 	}
+
+	$: if (searchMode === 'tags' && Object.keys(visibleColumns).length > 0) {
+		tagVisibleColumns = visibleColumns;
+	}
+
+	$: displayedTagRows = latestOnly ? latestTagPerRepository(tagRows) : tagRows;
+	$: tableRows = (searchMode === 'tags' ? displayedTagRows : repositories.results) as unknown as Row[];
+	$: tableColumns = searchMode === 'tags' ? tagColumns : columns;
+	$: tableLoading =
+		searchMode === 'tags' ? tagSearchState === 'searching' && tagRows.length === 0 : isLoading;
+	$: tableLoadingMore =
+		searchMode === 'tags' && tagSearchState === 'searching' && tagRows.length > 0;
+	$: tableEmpty = searchMode === 'tags' ? displayedTagRows.length === 0 : repositories.results.length === 0;
+	$: tableEmptyMessage =
+		searchMode === 'tags'
+			? tagSearchState === 'done'
+				? translations.tagSearchEmpty
+				: tagSearchState === 'short'
+					? translations.tagSearchTooShort
+					: translations.tagSearchHint
+			: translations.emptyMessage;
+	$: tableInfo = searchMode === 'tags' ? tagSearchInfo : '';
+	$: tableMatchCount =
+		searchMode === 'tags' && (tagSearchState === 'searching' || tagSearchState === 'done')
+			? translations.tagSearchDone.replace('{matches}', String(displayedTagRows.length))
+			: '';
+	$: tableProgress =
+		searchMode === 'tags' && tagSearchState === 'searching' ? tagSearchProgress : null;
 </script>
 
 <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -216,23 +495,37 @@
 			{/if}
 
 			<Table
-				{columns}
-				rows={repositories.results as any[]}
-				{isLoading}
-				isEmpty={repositories.results.length === 0}
-				emptyMessage={translations.emptyMessage}
-				onRowClick={handleRepositoryClick}
-				onRefresh={() => loadRepositories()}
+				columns={tableColumns}
+				rows={tableRows}
+				isLoading={tableLoading}
+				isLoadingMore={tableLoadingMore}
+				isEmpty={tableEmpty}
+				emptyMessage={tableEmptyMessage}
+				getRowHref={rowHref}
+				onRefresh={handleRefresh}
 				refreshTooltip={translations.refreshTooltip}
 				onSearch={handleSearch}
 				searchValue={searchTerm}
 				searchPlaceholder={translations.searchPlaceholder}
 				settingsTooltip={translations.settingsTooltip}
 				columnsLabel={translations.columnsLabel}
+				searchModes={[
+					{ id: 'repositories', label: translations.searchModeRepositories },
+					{ id: 'tags', label: translations.searchModeTags }
+				]}
+				{searchMode}
+				searchModesLabel={translations.searchModeLabel}
+				onSearchModeChange={handleSearchModeChange}
+				submitSearchOnly={searchMode === 'tags'}
+				infoMessage={tableInfo}
+				progress={tableProgress}
+				bind:latestOnly
+				latestOnlyLabel={searchMode === 'tags' ? translations.tagSearchLatestOnly : ''}
+				matchCountText={tableMatchCount}
 				bind:visibleColumns
 			>
 				<svelte:fragment slot="cell" let:row let:column let:value>
-					{#if column.key === 'name'}
+					{#if column.key === 'name' || column.key === 'repository'}
 						<div class="text-sm font-medium text-gray-900 dark:text-white">
 							{value || '-'}
 						</div>
@@ -248,7 +541,7 @@
 						<div class="text-sm text-gray-900 dark:text-white">
 							{formatNumber(value as number)}
 						</div>
-					{:else if column.key === 'storage_size'}
+					{:else if column.key === 'full_size' || column.key === 'storage_size'}
 						<div class="text-sm text-gray-900 dark:text-white">
 							{formatBytes(value as number)}
 						</div>
@@ -273,6 +566,8 @@
 						<div class="text-sm text-gray-900 dark:text-white">
 							{value ? 'Yes' : 'No'}
 						</div>
+					{:else if column.key === 'copy'}
+						<CopyTagButton repository={row.repository as string} tag={row.name as string} />
 					{:else if Array.isArray(value)}
 						<div class="text-sm text-gray-900 dark:text-white">
 							{value.join(', ') || '-'}

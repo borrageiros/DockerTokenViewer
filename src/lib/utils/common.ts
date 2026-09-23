@@ -1,7 +1,25 @@
 import type { Writable } from 'svelte/store';
 import { get } from 'svelte/store';
+import { goto } from '$app/navigation';
 import { config } from '$lib/stores/config';
 import { DOCKER_HUB_URL } from '$lib/consts';
+
+export function isPlainLeftClick(event: MouseEvent) {
+	return event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;
+}
+
+export function openInApp(event: MouseEvent, href: string) {
+	if (!isPlainLeftClick(event)) return;
+	event.preventDefault();
+	goto(href);
+}
+
+export function appPath(repository?: string, tag?: string) {
+	if (!repository) return '/';
+	const path = `/repository/${encodeURIComponent(repository)}`;
+	if (!tag) return path;
+	return `${path}/${encodeURIComponent(tag)}`;
+}
 
 export function formatBytes(bytes: number | undefined | null): string {
 	if (!bytes || bytes === 0) return '0 B';

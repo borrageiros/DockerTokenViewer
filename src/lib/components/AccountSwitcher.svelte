@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { config } from '$lib/stores/config';
-	import { createEventDispatcher } from 'svelte';
 	import { deleteAuthCookie } from '$lib/api';
 	import { get } from 'svelte/store';
 	import { goto } from '$app/navigation';
 	import { currentLanguage, t, loadLanguageTranslations } from '$lib/stores/i18n';
 	import { page } from '$app/stores';
+	import Button from './Button.svelte';
+	import Dropdown from './Dropdown.svelte';
 	let translations: Record<string, string> = {};
 	let isOpen = false;
 	$: accounts = $config.accounts;
@@ -54,29 +55,13 @@
 		}
 	}
 
-	function handleAddAccount() {
-		goto('/login');
-	}
 
-	function toggleDropdown() {
-		isOpen = !isOpen;
-	}
-
-	function closeDropdown() {
-		isOpen = false;
-	}
 </script>
 
-<svelte:window on:click={closeDropdown} />
-
-<div class="relative z-100 inline-block text-left">
-	<div>
-		<button
-			type="button"
-			class="inline-flex cursor-pointer items-center justify-center rounded-lg bg-gray-200 p-1 text-sm font-medium text-gray-700 dark:bg-gray-700 dark:text-gray-300"
-			on:click|stopPropagation={toggleDropdown}
-		>
-			<div class="flex items-center px-2 py-1">
+<Dropdown bind:open={isOpen} align="end" width="lg">
+	<svelte:fragment slot="trigger" let:toggle let:open>
+		<Button variant="secondary" stopPropagation on:click={toggle}>
+			<div class="flex items-center">
 				<div class="flex-shrink-0">
 					<div class="h-2 w-2 rounded-full bg-green-400"></div>
 				</div>
@@ -85,7 +70,7 @@
 						{activeAccount?.organization || ''}
 					</p>
 				</div>
-				{#if isOpen}
+				{#if open}
 					<!-- Arrow up -->
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
@@ -115,17 +100,10 @@
 					>
 				{/if}
 			</div>
-		</button>
-	</div>
+		</Button>
+	</svelte:fragment>
 
-	{#if isOpen}
-		<div
-			class="ring-opacity-5 absolute right-0 z-10 mt-2 w-80 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black focus:outline-none dark:divide-gray-700 dark:bg-gray-800 dark:ring-gray-600"
-			on:click|stopPropagation
-			on:keydown|stopPropagation
-			role="menu"
-			tabindex="0"
-		>
+	<div class="divide-y divide-gray-100 dark:divide-gray-700">
 			<div class="px-4 py-3">
 				<p class="text-sm text-gray-500 dark:text-gray-400">
 					{translations.savedAccounts}
@@ -134,11 +112,9 @@
 
 			<div class="max-h-60 overflow-y-auto py-1">
 				{#each accounts as account (account.id)}
-					<button
-						type="button"
-						class="group flex w-full cursor-pointer items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-gray-100 {account.isActive
-							? 'bg-blue-50 text-blue-900 dark:bg-blue-900/20 dark:text-blue-300'
-							: ''}"
+					<Button
+						variant="menu"
+						active={account.isActive}
 						on:click={() => handleSwitchAccount(account.id)}
 					>
 						<div class="flex w-full items-center justify-between">
@@ -174,7 +150,7 @@
 								</svg>
 							</div>
 						</div>
-					</button>
+					</Button>
 				{/each}
 
 				{#if accounts.length === 0}
@@ -187,19 +163,14 @@
 			</div>
 
 			<div class="py-1">
-				<button
-					type="button"
-					class="group flex w-full cursor-pointer items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-gray-100"
-					on:click={handleAddAccount}
-				>
+				<Button variant="menu" href="/login">
 					<svg class="mr-3 h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
 						<path
 							d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z"
 						/>
 					</svg>
 					{translations.addAccount}
-				</button>
+				</Button>
 			</div>
-		</div>
-	{/if}
-</div>
+	</div>
+</Dropdown>
