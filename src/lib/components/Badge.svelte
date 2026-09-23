@@ -11,7 +11,7 @@
 </script>
 
 <span
-	class="ml-2 inline-flex min-w-[3.5rem] items-center justify-center rounded-full px-2 py-1 text-xs font-medium {colorClasses[
+	class="inline-flex min-w-[3.5rem] shrink-0 items-center justify-center rounded-full px-2 py-1 text-xs font-medium {colorClasses[
 		color
 	]}"
 	title={tooltipText}

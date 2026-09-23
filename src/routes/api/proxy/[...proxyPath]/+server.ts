@@ -11,7 +11,13 @@ export const GET: RequestHandler = async ({ params, request, url, cookies }) => 
 	if (!encryptedAccountHeader) {
 		return new Response('Account is missing', { status: 400 });
 	}
-	const account = decrypt(encryptedAccountHeader) as AccountData;
+
+	let account: AccountData;
+	try {
+		account = decrypt(encryptedAccountHeader) as AccountData;
+	} catch {
+		return new Response('Invalid account', { status: 401 });
+	}
 
 	if (!params.proxyPath) {
 		return new Response('Proxy path is missing', { status: 400 });

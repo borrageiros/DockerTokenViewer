@@ -22,10 +22,26 @@ export function encrypt(data: object): string {
 }
 
 export function decrypt(encryptedData: string): object {
+	if (!encryptedData.includes(':')) {
+		throw new Error('Invalid encrypted data');
+	}
+
 	const [ivBase64, encrypted] = encryptedData.split(':');
+	if (!ivBase64 || !encrypted) {
+		throw new Error('Invalid encrypted data');
+	}
+
 	const iv = Buffer.from(ivBase64, 'base64');
-	const decipher = crypto.createDecipheriv(ALGORITHM, getKey(), iv);
-	let decrypted = decipher.update(encrypted, 'base64', 'utf8');
-	decrypted += decipher.final('utf8');
-	return JSON.parse(decrypted);
+	if (iv.length !== IV_LENGTH) {
+		throw new Error('Invalid encrypted data');
+	}
+
+	try {
+		const decipher = crypto.createDecipheriv(ALGORITHM, getKey(), iv);
+		let decrypted = decipher.update(encrypted, 'base64', 'utf8');
+		decrypted += decipher.final('utf8');
+		return JSON.parse(decrypted);
+	} catch {
+		throw new Error('Invalid encrypted data');
+	}
 }

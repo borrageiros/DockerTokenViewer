@@ -8,8 +8,9 @@ export type Language = 'es' | 'en';
 export interface Account {
 	id: string;
 	organization: string;
-	data: string; // encrypted object with user and token
+	data: string;
 	isActive: boolean;
+	favorites: string[];
 }
 
 export interface AccountData {
@@ -66,6 +67,12 @@ function getInitialConfig(): Config {
 					...defaultConfig.tableSettings,
 					...parsed.tableSettings
 				};
+			}
+			if (Array.isArray(parsed.accounts)) {
+				parsed.accounts = parsed.accounts.map((account: Account) => ({
+					...account,
+					favorites: Array.isArray(account.favorites) ? account.favorites : []
+				}));
 			}
 			return { ...defaultConfig, ...parsed };
 		}
@@ -130,7 +137,13 @@ function createConfigStore() {
 					...config,
 					accounts: [
 						...config.accounts.map((acc) => ({ ...acc, isActive: false })),
-						{ id: generateUniqueId(), organization, data: dataAccount, isActive: true }
+						{
+							id: generateUniqueId(),
+							organization,
+							data: dataAccount,
+							isActive: true,
+							favorites: []
+						}
 					]
 				};
 				saveToStorage(newConfig);
@@ -165,6 +178,25 @@ function createConfigStore() {
 					accounts: updatedAccounts
 				};
 
+				saveToStorage(newConfig);
+				return newConfig;
+			});
+		},
+		toggleFavorite: (repositoryId: string) => {
+			update((current) => {
+				const newConfig = {
+					...current,
+					accounts: current.accounts.map((account) => {
+						if (!account.isActive) return account;
+						const favorites = account.favorites ?? [];
+						return {
+							...account,
+							favorites: favorites.includes(repositoryId)
+								? favorites.filter((id) => id !== repositoryId)
+								: [...favorites, repositoryId]
+						};
+					})
+				};
 				saveToStorage(newConfig);
 				return newConfig;
 			});

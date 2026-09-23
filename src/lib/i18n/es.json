@@ -40,6 +40,7 @@
 	"repositories": {
 		"title": "Repositorios",
 		"table": {
+			"favorite": "Favorito",
 			"name": "Nombre",
 			"description": "Descripción",
 			"downloads": "Descargas",
@@ -80,7 +81,9 @@
 		"tagSearchFailed": "{failed} repositorios no se pudieron consultar",
 		"tagSearchTag": "Tag",
 		"tagSearchEmpty": "No se encontraron tags",
-		"tagSearchError": "Error al buscar tags"
+		"tagSearchError": "Error al buscar tags",
+		"favoriteAdd": "Añadir a favoritos",
+		"favoriteRemove": "Quitar de favoritos"
 	},
 	"tags": {
 		"title": "Tags de {repository}",

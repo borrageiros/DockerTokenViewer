@@ -34,6 +34,11 @@ export function formatNumber(num: number | undefined | null): string {
 	return num.toLocaleString();
 }
 
+export function truncateText(value: string, maxLength: number): string {
+	if (value.length <= maxLength) return value;
+	return `${value.slice(0, maxLength).trimEnd()}…`;
+}
+
 export function formatDate(
 	dateString: string | undefined | null,
 	locale: 'es' | 'en' = 'es'

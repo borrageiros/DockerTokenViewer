@@ -46,8 +46,7 @@
 		}
 	}
 
-	async function handleRemoveAccount(accountId: string, event: Event) {
-		event.stopPropagation();
+	async function handleRemoveAccount(accountId: string) {
 		const isRemovingActive = activeAccount?.id === accountId;
 		await config.deleteAccount(accountId);
 		if (isRemovingActive && typeof window !== 'undefined') {
@@ -112,13 +111,13 @@
 
 			<div class="max-h-60 overflow-y-auto py-1">
 				{#each accounts as account (account.id)}
-					<Button
-						variant="menu"
-						active={account.isActive}
-						on:click={() => handleSwitchAccount(account.id)}
-					>
-						<div class="flex w-full items-center justify-between">
-							<div class="flex items-center">
+					<div class="relative">
+						<Button
+							variant="menu"
+							active={account.isActive}
+							on:click={() => handleSwitchAccount(account.id)}
+						>
+							<div class="flex items-center pr-8">
 								<div class="flex-shrink-0">
 									<div
 										class="h-2 w-2 rounded-full {account.isActive
@@ -132,14 +131,14 @@
 									</p>
 								</div>
 							</div>
-							<div
-								class="ml-2 inline-flex h-6 w-6 cursor-pointer items-center justify-center rounded-full text-gray-400 opacity-0 group-hover:opacity-100 hover:text-red-500 focus:ring-2 focus:ring-red-500 focus:outline-none"
-								on:click={(event) => handleRemoveAccount(account.id, event)}
-								on:keydown={(event) =>
-									event.key === 'Enter' && handleRemoveAccount(account.id, event)}
+						</Button>
+						<div class="absolute inset-y-0 right-1 flex items-center">
+							<Button
+								variant="icon"
+								stopPropagation
+								on:click={() => handleRemoveAccount(account.id)}
 								title={translations.deleteAccountTitle}
-								tabindex="0"
-								role="button"
+								aria-label={translations.deleteAccountTitle}
 							>
 								<svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
 									<path
@@ -148,9 +147,9 @@
 										clip-rule="evenodd"
 									/>
 								</svg>
-							</div>
+							</Button>
 						</div>
-					</Button>
+					</div>
 				{/each}
 
 				{#if accounts.length === 0}

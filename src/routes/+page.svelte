@@ -10,6 +10,7 @@
 	import Header from '$lib/components/Header.svelte';
 	import Badge from '$lib/components/Badge.svelte';
 	import CopyTagButton from '$lib/components/CopyTagButton.svelte';
+	import FavoriteButton from '$lib/components/FavoriteButton.svelte';
 	import Table from '$lib/components/Table.svelte';
 	import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
 	import type { Column, Row } from '$lib/components/Table.types';
@@ -22,7 +23,8 @@
 		isToday,
 		isYesterday,
 		isThisWeek,
-		appPath
+		appPath,
+		truncateText
 	} from '$lib/utils/common';
 	import { baseRepository } from '$lib/stores/repository';
 	import { config } from '$lib/stores/config';
@@ -67,6 +69,7 @@
 		await loadLanguageTranslations(language);
 		translations = {
 			repoTitle: t('repositories.title', language),
+			repoTableFavorite: t('repositories.table.favorite', language),
 			repoTableName: t('repositories.table.name', language),
 			repoTableDescription: t('repositories.table.description', language),
 			repoTableDownloads: t('repositories.table.downloads', language),
@@ -117,19 +120,29 @@
 		};
 
 		columns = [
+			{
+				key: 'favorite',
+				label: translations.repoTableFavorite,
+				header: '',
+				sortable: true,
+				visible: true,
+				width: 'w-12',
+				align: 'center'
+			},
 			{ key: 'name', label: translations.repoTableName, sortable: true, visible: true },
 			{
 				key: 'description',
 				label: translations.repoTableDescription,
 				sortable: true,
-				visible: true
+				visible: true,
+				width: 'w-[30%]'
 			},
 			{ key: 'pull_count', label: translations.repoTableDownloads, sortable: true, visible: true },
 			{ key: 'storage_size', label: translations.repoTableSize, sortable: true, visible: true },
 			{
 				key: 'last_updated',
 				label: translations.repoTableLastUpdate,
-				width: 'w-48',
+				width: 'w-64',
 				sortable: true,
 				visible: true
 			},
@@ -450,7 +463,12 @@
 	}
 
 	$: displayedTagRows = latestOnly ? latestTagPerRepository(tagRows) : tagRows;
-	$: tableRows = (searchMode === 'tags' ? displayedTagRows : repositories.results) as unknown as Row[];
+	$: favorites = $config.accounts.find((account) => account.isActive)?.favorites ?? [];
+	$: repositoryRows = repositories.results.map((repository) => ({
+		...repository,
+		favorite: favorites.includes(repository.name)
+	}));
+	$: tableRows = (searchMode === 'tags' ? displayedTagRows : repositoryRows) as unknown as Row[];
 	$: tableColumns = searchMode === 'tags' ? tagColumns : columns;
 	$: tableLoading =
 		searchMode === 'tags' ? tagSearchState === 'searching' && tagRows.length === 0 : isLoading;
@@ -522,16 +540,21 @@
 				bind:latestOnly
 				latestOnlyLabel={searchMode === 'tags' ? translations.tagSearchLatestOnly : ''}
 				matchCountText={tableMatchCount}
+				defaultSortColumn={searchMode === 'repositories' ? 'favorite' : null}
+				defaultSortDirection="desc"
 				bind:visibleColumns
 			>
 				<svelte:fragment slot="cell" let:row let:column let:value>
-					{#if column.key === 'name' || column.key === 'repository'}
-						<div class="text-sm font-medium text-gray-900 dark:text-white">
+					{#if column.key === 'favorite'}
+						<FavoriteButton repository={row.name as string} />
+					{:else if column.key === 'name' || column.key === 'repository'}
+						<div class="truncate text-sm font-medium text-gray-900 dark:text-white" title={String(value || '-')}>
 							{value || '-'}
 						</div>
 					{:else if column.key === 'description'}
-						<div class="text-sm text-gray-900 dark:text-white">
-							{value || translations.noDescription}
+						{@const description = (value as string) || translations.noDescription}
+						<div class="truncate text-sm text-gray-900 dark:text-white" title={description}>
+							{truncateText(description, 72)}
 						</div>
 					{:else if column.key === 'pull_count'}
 						<div class="text-sm text-gray-900 dark:text-white">
@@ -546,8 +569,8 @@
 							{formatBytes(value as number)}
 						</div>
 					{:else if column.key === 'last_updated' || column.key === 'last_modified' || column.key === 'date_registered'}
-						<div class="flex items-center text-sm text-gray-900 dark:text-white">
-							<span class="mr-2">{formatDate(value as string, $currentLanguage)}</span>
+						<div class="flex items-center whitespace-nowrap text-sm text-gray-900 dark:text-white">
+							<span class="mr-2 shrink-0">{formatDate(value as string, $currentLanguage)}</span>
 							{#if column.key === 'last_updated'}
 								{#if isToday(value as string)}
 									<Badge text={translations.badgeToday} color="success" />

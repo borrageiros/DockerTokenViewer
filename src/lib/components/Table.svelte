@@ -34,6 +34,8 @@
 	export let latestOnly = false;
 	export let latestOnlyLabel = '';
 	export let matchCountText = '';
+	export let defaultSortColumn: string | null = null;
+	export let defaultSortDirection: 'asc' | 'desc' = 'asc';
 
 	const dispatch = createEventDispatcher();
 	let searchTimeout: ReturnType<typeof setTimeout>;
@@ -47,10 +49,15 @@
 	$: showInfoBar = Boolean(latestOnlyLabel || infoMessage || progress || matchCountText);
 	$: if (!showInfoBar) infoBarHeight = 0;
 
-	let sortColumn: string | null = null;
-	let sortDirection: 'asc' | 'desc' = 'asc';
+	let sortColumn: string | null = defaultSortColumn;
+	let sortDirection: 'asc' | 'desc' = defaultSortDirection;
+	let lastDefaultSort = `${defaultSortColumn}:${defaultSortDirection}`;
 	let sortedRows: Row[] = [];
 	let filteredColumns: Column[] = [];
+
+	function isActionColumn(key: string) {
+		return key === 'copy' || key === 'favorite';
+	}
 
 	function handleRowClick(row: Row) {
 		if (onRowClick) {
@@ -226,6 +233,15 @@
 			!!searchInput && document.activeElement === searchInput && inputValue.startsWith(searchValue);
 		if (!typingAhead) {
 			inputValue = searchValue;
+		}
+	}
+
+	$: {
+		const nextDefaultSort = `${defaultSortColumn}:${defaultSortDirection}`;
+		if (nextDefaultSort !== lastDefaultSort) {
+			lastDefaultSort = nextDefaultSort;
+			sortColumn = defaultSortColumn;
+			sortDirection = defaultSortDirection;
 		}
 	}
 
@@ -446,12 +462,12 @@
 		style={infoBarHeight > 0 ? `height: calc(100vh - 15rem - ${infoBarHeight}px)` : undefined}
 		on:scroll={handleScroll}
 	>
-		<table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+		<table class="w-full table-fixed divide-y divide-gray-200 dark:divide-gray-700">
 			<thead class="sticky top-0 z-10 bg-gray-50 dark:bg-gray-900">
 				<tr>
 					{#each filteredColumns as column}
 						<th
-							class="px-6 py-3 text-{column.align ||
+							class="px-4 py-3 text-{column.align ||
 								'left'} text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400 {column.width ||
 								''} {column.sortable
 								? 'cursor-pointer select-none hover:bg-gray-100 dark:hover:bg-gray-800'
@@ -465,7 +481,7 @@
 										? 'justify-end'
 										: 'justify-start'}"
 							>
-								<span>{column.label}</span>
+								<span>{column.header ?? column.label}</span>
 								{#if column.sortable}
 									<div class="ml-1 flex flex-col">
 										{#if sortColumn === column.key}
@@ -533,11 +549,11 @@
 							}}
 						>
 							{#each filteredColumns as column}
-								<td class={column.key === 'description' ? '' : 'whitespace-nowrap'}>
-									{#if href && column.key !== 'copy'}
+								<td class="whitespace-nowrap">
+									{#if href && !isActionColumn(column.key)}
 										<a
 											{href}
-											class="block cursor-pointer px-6 py-4 text-inherit no-underline"
+											class="block cursor-pointer px-4 py-4 text-inherit no-underline"
 											on:click={(event) => openInApp(event, href)}
 										>
 											<slot name="cell" {row} {column} value={row[column.key]}>
@@ -547,7 +563,7 @@
 											</slot>
 										</a>
 									{:else}
-										<div class="px-6 py-4">
+										<div class="px-4 py-4">
 											<slot name="cell" {row} {column} value={row[column.key]}>
 												<div class="text-sm text-gray-900 dark:text-white">
 													{row[column.key] || '-'}

@@ -41,6 +41,7 @@
 		"title": "Repositories",
 		"subtitle": "Manage your Docker repositories",
 		"table": {
+			"favorite": "Favorite",
 			"name": "Name",
 			"description": "Description",
 			"downloads": "Downloads",
@@ -81,7 +82,9 @@
 		"tagSearchFailed": "{failed} repositories could not be queried",
 		"tagSearchTag": "Tag",
 		"tagSearchEmpty": "No tags found",
-		"tagSearchError": "Error searching tags"
+		"tagSearchError": "Error searching tags",
+		"favoriteAdd": "Add to favorites",
+		"favoriteRemove": "Remove from favorites"
 	},
 	"tags": {
 		"title": "Tags for {repository}",
