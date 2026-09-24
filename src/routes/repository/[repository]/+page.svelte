@@ -21,7 +21,7 @@
 		formatNumber,
 		appPath
 	} from '$lib/utils/common';
-	import { config } from '$lib/stores/config';
+	import { config, getAccountTableSort } from '$lib/stores/config';
 
 	let tags: Tag[] = [];
 	let isLoading = false;
@@ -36,6 +36,10 @@
 	let searchTerm = '';
 	let initialLoading = true;
 	let visibleColumns: Record<string, boolean> = {};
+	$: tagSort = getAccountTableSort(
+		$config.accounts.find((account) => account.isActive),
+		'tags'
+	);
 
 	$: repository = $page.params.repository;
 
@@ -271,6 +275,9 @@
 				settingsTooltip={translations.settingsTooltip}
 				columnsLabel={translations.columnsLabel}
 				getRowHref={tagHref}
+				defaultSortColumn={tagSort.column}
+				defaultSortDirection={tagSort.direction}
+				onSort={(sort) => config.setTableSort('tags', sort)}
 				bind:visibleColumns
 			>
 				<svelte:fragment slot="cell" let:row let:column let:value>

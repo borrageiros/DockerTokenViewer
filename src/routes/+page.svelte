@@ -27,7 +27,7 @@
 		truncateText
 	} from '$lib/utils/common';
 	import { baseRepository } from '$lib/stores/repository';
-	import { config } from '$lib/stores/config';
+	import { config, getAccountTableSort, type TableSortKey } from '$lib/stores/config';
 
 	let repositories: RepositoriesResponse = {
 		count: 0,
@@ -463,7 +463,10 @@
 	}
 
 	$: displayedTagRows = latestOnly ? latestTagPerRepository(tagRows) : tagRows;
-	$: favorites = $config.accounts.find((account) => account.isActive)?.favorites ?? [];
+	$: activeAccount = $config.accounts.find((account) => account.isActive);
+	$: favorites = activeAccount?.favorites ?? [];
+	$: tableSortKey = (searchMode === 'repositories' ? 'repositories' : 'tagSearch') as TableSortKey;
+	$: currentSort = getAccountTableSort(activeAccount, tableSortKey);
 	$: repositoryRows = repositories.results.map((repository) => ({
 		...repository,
 		favorite: favorites.includes(repository.name)
@@ -540,8 +543,9 @@
 				bind:latestOnly
 				latestOnlyLabel={searchMode === 'tags' ? translations.tagSearchLatestOnly : ''}
 				matchCountText={tableMatchCount}
-				defaultSortColumn={searchMode === 'repositories' ? 'favorite' : null}
-				defaultSortDirection="desc"
+				defaultSortColumn={currentSort.column}
+				defaultSortDirection={currentSort.direction}
+				onSort={(sort) => config.setTableSort(tableSortKey, sort)}
 				bind:visibleColumns
 			>
 				<svelte:fragment slot="cell" let:row let:column let:value>

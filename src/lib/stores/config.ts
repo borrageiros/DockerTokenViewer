@@ -5,12 +5,27 @@ import { goto } from '$app/navigation';
 
 export type Theme = 'light' | 'dark' | 'system';
 export type Language = 'es' | 'en';
+export type SortDirection = 'asc' | 'desc';
+export type TableSortKey = 'repositories' | 'tags' | 'tagSearch';
+
+export interface TableSort {
+	column: string | null;
+	direction: SortDirection;
+}
+
+export interface AccountTableSort {
+	repositories: TableSort;
+	tags: TableSort;
+	tagSearch: TableSort;
+}
+
 export interface Account {
 	id: string;
 	organization: string;
 	data: string;
 	isActive: boolean;
 	favorites: string[];
+	tableSort: Partial<AccountTableSort>;
 }
 
 export interface AccountData {
@@ -29,6 +44,33 @@ export interface Config {
 	language: Language;
 	accounts: Account[];
 	tableSettings: TableSettings;
+}
+
+function defaultTableSort(): AccountTableSort {
+	return {
+		repositories: { column: 'favorite', direction: 'desc' },
+		tags: { column: null, direction: 'asc' },
+		tagSearch: { column: null, direction: 'asc' }
+	};
+}
+
+function normalizeTableSort(sort?: Partial<AccountTableSort> | null): Partial<AccountTableSort> {
+	if (!sort) return {};
+
+	const next: Partial<AccountTableSort> = {};
+	(['repositories', 'tags', 'tagSearch'] as TableSortKey[]).forEach((key) => {
+		const value = sort[key];
+		if (!value || !('column' in value)) return;
+		next[key] = {
+			column: value.column ?? null,
+			direction: value.direction === 'desc' ? 'desc' : 'asc'
+		};
+	});
+	return next;
+}
+
+export function getAccountTableSort(account: Account | undefined, table: TableSortKey): TableSort {
+	return account?.tableSort?.[table] ?? defaultTableSort()[table];
 }
 
 function getDefaultConfig(): Config {
@@ -71,7 +113,8 @@ function getInitialConfig(): Config {
 			if (Array.isArray(parsed.accounts)) {
 				parsed.accounts = parsed.accounts.map((account: Account) => ({
 					...account,
-					favorites: Array.isArray(account.favorites) ? account.favorites : []
+					favorites: Array.isArray(account.favorites) ? account.favorites : [],
+					tableSort: normalizeTableSort(account.tableSort)
 				}));
 			}
 			return { ...defaultConfig, ...parsed };
@@ -142,7 +185,8 @@ function createConfigStore() {
 							organization,
 							data: dataAccount,
 							isActive: true,
-							favorites: []
+							favorites: [],
+							tableSort: {}
 						}
 					]
 				};
@@ -194,6 +238,25 @@ function createConfigStore() {
 							favorites: favorites.includes(repositoryId)
 								? favorites.filter((id) => id !== repositoryId)
 								: [...favorites, repositoryId]
+						};
+					})
+				};
+				saveToStorage(newConfig);
+				return newConfig;
+			});
+		},
+		setTableSort: (table: TableSortKey, sort: TableSort) => {
+			update((current) => {
+				const newConfig = {
+					...current,
+					accounts: current.accounts.map((account) => {
+						if (!account.isActive) return account;
+						return {
+							...account,
+							tableSort: {
+								...normalizeTableSort(account.tableSort),
+								[table]: sort
+							}
 						};
 					})
 				};

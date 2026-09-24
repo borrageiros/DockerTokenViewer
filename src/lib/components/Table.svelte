@@ -36,6 +36,8 @@
 	export let matchCountText = '';
 	export let defaultSortColumn: string | null = null;
 	export let defaultSortDirection: 'asc' | 'desc' = 'asc';
+	export let onSort: ((sort: { column: string | null; direction: 'asc' | 'desc' }) => void) | null =
+		null;
 
 	const dispatch = createEventDispatcher();
 	let searchTimeout: ReturnType<typeof setTimeout>;
@@ -123,6 +125,10 @@
 			sortColumn = column.key;
 			sortDirection = 'asc';
 		}
+
+		const sort = { column: sortColumn, direction: sortDirection };
+		if (onSort) onSort(sort);
+		dispatch('sort', sort);
 	}
 
 	function sortRows(rows: Row[], column: string | null, direction: 'asc' | 'desc'): Row[] {
